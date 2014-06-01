@@ -1,0 +1,84 @@
+<#import "template.html" as template>
+<@template.content>
+
+<div class="row section">
+		<img src="/images/business_cards.jpeg" style="height: 250px;" class="float_right" />
+		<div class="page-header">
+		  <h1>Newbiecoin <small>a coin for betting in a decentralized casino</small></h1>
+		</div>
+		<p>Newbiecoin is a coin and a casino. It's made for a little joy. <a href="/participate">Download</a> the Newbiecoin software &#8212; including wallet ,decentralized casino, and decentralized exchange(coming soon) . Start playing today!</p>
+		<p>Coins were created by burning Bitcoins during a creative "Twin-channel Proof of Burn" period.</p>
+		<p>Built on top of the Bitcoin blockchain, Newbiecoin is a casino that is truly decentralized. There is no central point of failure. The owner can't run away with the bankroll. It's owned by the people.</p>
+		<p><a class="btn btn-primary btn-lg" role="button" href="/participate">Download</a> <a class="btn btn-primary btn-lg" role="button" href="/technical">Learn more</a></p>
+</div>
+<div class="row section">
+<h2>News</h2>
+<iframe width="100%" height="50" scrolling="auto" frameborder="no" name="news_content" id="news_content" src="${news_url}"></iframe>
+</div>
+
+<div class="row section">
+		<h2>Roll dice</h2>
+		<form action="/casino" class="form-inline" method="post">
+
+				<input type="hidden" name="form" value="bet">
+				<input type="hidden" name="source" value="${address}">
+
+			    <div class="form-group">
+					<div class="input-group">
+						<span class="input-group-addon">#</span>
+						<input type="text" placeholder="bet size (NEWB)" name="bet">
+					</div>
+				</div>
+				<div class="form-group">
+					<div class="input-group">
+						<span class="input-group-addon">?</span>
+						<select name="big_or_small">
+						<option value="1">Bigger[5-9]</item>
+						<option value="0">Smaller[0-4]</item>
+						</select>
+					</div>
+				</div>
+				<div class="form-group">
+					<div class="input-group">
+						<span>&nbsp;&nbsp;&nbsp;&nbsp;</span>
+						<span class="input-group-btn">
+							<button class="btn btn-default" type="submit"  onclick="this.innerHTML='Waiting';this.disabled=true;form.submit();" <#if !own??>disabled="disabled"</#if>>Roll dice</button>
+						</span>
+					</div>
+				</div>
+
+		</form>
+</div>
+
+<div class="row section">
+		<h2>Recent <a href="/casino">bets</a></h2>
+		<table class="table table-striped">
+				<thead>
+						<tr>
+                                <th>Block</th>
+								<th>Time</th>
+								<th>Source address</th>
+								<th>Bet size</th>
+								<th>Bigger or Smaller</th>
+								<th>Roll</th>
+								<th>Profit</th>
+						</tr>
+				</thead>
+
+				<tbody>
+					<#list bets as bet>
+							<tr>
+                                    <td><a target="_blank" href="https://blockchain.info/block-index/${bet["block_index"]}/">${bet["block_index"]}</a></td>
+									<td>${bet["block_time"]}</td>
+									<td><a target="_blank" href="/wallet?address=${bet["source"]}">${bet["source"]}</a></td>
+									<td>${bet["bet"]} NEWB</td>
+									<td><#if bet["bet_bs"]==1>BIGGER<#else>SMALLER</#if></td>
+									<td><#if bet["resolved"]??><#if bet["roll"]==1>BIGGER<#else>SMALLER</#if><#else>Pending</#if></td>
+									<td><#if bet["resolved"]?? && bet["resolved"]="true">${bet["profit"]} NEWB<#else>Unresolved</#if></td>
+							</tr>
+					</#list>
+				</tbody>
+		</table>
+</div>
+
+</@template.content>

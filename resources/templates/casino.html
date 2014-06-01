@@ -1,0 +1,244 @@
+<#import "template.html" as template>
+<@template.content>
+		<div class="row section">
+				<h2>Roll dice</h2>
+				<form action="/casino" class="form-inline" method="post">
+
+						<input type="hidden" name="form" value="bet">
+						<input type="hidden" name="source" value="${address}">
+
+					  <div class="form-group">
+							<div class="input-group">
+								<span class="input-group-addon">#</span>
+								<input type="text" placeholder="bet size (NEWB)" name="bet">
+							</div>
+						</div>
+						<div class="form-group">
+							<div class="input-group">
+                                <span class="input-group-addon">?</span>
+                                <select name="big_or_small">
+								<option value="1">Bigger[5-9]</item>
+                                <option value="0">Smaller[0-4]</item>
+                                </select>
+                            </div>
+						</div>
+						<div class="form-group">
+							<div class="input-group">
+								<span>&nbsp;&nbsp;&nbsp;&nbsp;</span>
+								<span class="input-group-btn">
+									<button class="btn btn-default" type="submit"  onclick="this.innerHTML='Waiting';this.disabled=true;form.submit();" <#if !own??>disabled="disabled"</#if>>Roll dice</button>
+								</span>
+							</div>
+						</div>
+
+				</form>
+		</div>
+		<div class="row section">
+			<ul>
+			<li><strong>Current  round:</strong> Block[${betting_start_block}-${betting_end_block}]  Betting</li>
+			<li><strong>Previous round:</strong> Block[${prev_bet_start_block}-${prev_bet_end_block}] ${prev_bet_status}</li>
+			</ul>
+		</div>
+		<div class="row section padding-top">
+		    <ul id="tabs" class="nav nav-tabs" data-tabs="tabs">
+		        <li class="active"><a href="#recent_bets" data-toggle="tab">Recent bets</a></li>
+						<#if my_bets??>
+						<li><a href="#my_bets" data-toggle="tab">My bets</a></li>
+						</#if>
+		        <li><a href="#leaderboard" data-toggle="tab">Leaderboard</a></li>
+                <li><a href="#house_info" data-toggle="tab">House info</a></li>
+		    </ul>
+
+		    <div id="my-tab-content" class="tab-content">
+		        <div class="tab-pane active" id="recent_bets">
+								<h2>Recent bets</h2>
+
+								<table class="table table-striped">
+										<thead>
+												<tr>
+                                                        <th>Block</th>
+														<th>Time</th>
+														<th>Source address</th>
+														<th>Bet size</th>
+														<th>Bigger or Smaller</th>
+														<th>Roll</th>
+														<th>Profit</th>
+												</tr>
+										</thead>
+
+										<tbody>
+											<#if my_bets_pending??>
+											<#list my_bets_pending as bet>
+													<tr>
+                                                            <td><a target="_blank" href="https://blockchain.info/block-index/${bet["block_index"]}/">${bet["block_index"]}</a></td>
+															<td>${bet["block_time"]}</td>
+															<td><a href="/wallet?address=${bet["source"]}">${bet["source"]}</a></td>
+															<td>${bet["bet"]} NEWB</td>
+															<td><#if bet["bet_bs"]==1>BIGGER<#else>SMALLER</#if></td>
+															<td>Pending</td>
+															<td>?</td>
+													</tr>
+											</#list>
+											</#if>
+											<#list bets as bet>
+													<tr>
+                                                            <td><a target="_blank" href="https://blockchain.info/block-index/${bet["block_index"]}/">${bet["block_index"]}</a></td>
+															<td>${bet["block_time"]}</td>
+															<td><a href="/wallet?address=${bet["source"]}">${bet["source"]}</a></td>
+															<td>${bet["bet"]} NEWB</td>
+															<td><#if bet["bet_bs"]==1>BIGGER<#else>SMALLER</#if></td>
+															<td><#if bet["resolved"]??><#if bet["roll"]==1>BIGGER<#else>SMALLER</#if><#else>?</#if></td>
+															<td><#if bet["resolved"]?? && bet["resolved"]="true">${bet["profit"]} NEWB<#else>Unresolved</#if></td>
+													</tr>
+											</#list>
+										</tbody>
+								</table>
+
+						</div>
+
+						<#if my_bets??>
+		        <div class="tab-pane" id="my_bets">
+								<h2>My bets</h2>
+								<table class="table table-striped">
+										<thead>
+												<tr>
+                                                        <th>Block</th>
+														<th>Time</th>
+														<th>Source address</th>
+														<th>Bet size</th>
+														<th>Bigger or Smaller</th>
+														<th>Roll</th>
+														<th>Profit</th>
+												</tr>
+										</thead>
+										<tbody>
+											<#if my_bets_pending??>
+											<#list my_bets_pending as bet>
+													<tr>
+                                                            <td><a target="_blank" href="https://blockchain.info/block-index/${bet["block_index"]}/">${bet["block_index"]}</a></td>
+															<td>${bet["block_time"]}</td>
+															<td><a href="/wallet?address=${bet["source"]}">${bet["source"]}</a></td>
+															<td>${bet["bet"]} NEWB</td>
+															<td><#if bet["bet_bs"]==1>BIGGER<#else>SMALLER</#if></td>
+															<td>Pending</td>
+															<td>?</td>
+													</tr>
+											</#list>
+											</#if>
+											<#list my_bets as bet>
+													<tr>
+                                                            <td><a target="_blank" href="https://blockchain.info/block-index/${bet["block_index"]}/">${bet["block_index"]}</a></td>
+															<td>${bet["block_time"]}</td>
+															<td><a href="/wallet?address=${bet["source"]}">${bet["source"]}</a></td>
+															<td>${bet["bet"]} NEWB</td>
+															<td><#if bet["bet_bs"]==1>BIGGER<#else>SMALLER</#if></td>
+															<td><#if bet["resolved"]??><#if bet["roll"]==1>BIGGER<#else>SMALLER</#if><#else>?</#if></td>
+															<td><#if bet["resolved"]?? && bet["resolved"]="true">${bet["profit"]} NEWB<#else>Unresolved</#if></td>
+													</tr>
+											</#list>
+										</tbody>
+								</table>
+						</div>
+						</#if>
+
+		        <div class="tab-pane" id="leaderboard">
+								<h2>Biggest winners</h2>
+								<table class="table table-striped">
+										<thead>
+												<tr>
+														<th>Source address</th>
+														<th>Bet times</th>
+														<th>Average bet size</th>
+														<th>Total profit</th>
+												</tr>
+										</thead>
+										<#list winners as winner>
+												<tr>
+														<td><a href="/wallet?address=${winner["source"]}">${winner["source"]}</a></td>
+														<td>${winner["bet_count"]}</td>
+														<td>${winner["avg_bet"]} NEWB</td>
+														<td>${winner["sum_profit"]} NEWB</td>
+												</tr>
+										</#list>
+										<tbody>
+
+										</tbody>
+								</table>
+
+								<h2>High rollers</h2>
+								<table class="table table-striped">
+										<thead>
+												<tr>
+														<th>Source address</th>
+														<th>Bet times</th>
+														<th>Total bet size</th>
+														<th>Total profit</th>
+												</tr>
+										</thead>
+										<#list high_rollers as high_roller>
+												<tr>
+														<td><a href="/wallet?address=${high_roller["source"]}">${high_roller["source"]}</a></td>
+														<td>${high_roller["bet_count"]}</td>
+														<td>${high_roller["sum_bet"]} NEWB</td>
+														<td>${high_roller["sum_profit"]} NEWB</td>
+												</tr>
+										</#list>
+										<tbody>
+
+										</tbody>
+								</table>
+
+								<h2>Largest bets</h2>
+								<table class="table table-striped">
+										<thead>
+											<tr>
+                                                    <th>Block</th>
+													<th>Time</th>
+													<th>Source address</th>
+													<th>Bet size</th>
+													<th>Roll</th>
+													<th>Profit</th>
+											</tr>
+										</thead>
+										<#list largest_bets as largest_bet>
+											<tr>
+                                                    <td><a target="_blank" href="https://blockchain.info/block-index/${largest_bet["block_index"]}/">${largest_bet["block_index"]}</a></td>
+													<td>${largest_bet["block_time"]}</td>
+													<td><a href="/wallet?address=${largest_bet["source"]}">${largest_bet["source"]}</a></td>
+													<td>${largest_bet["bet"]} NEWB</td>
+													<td><#if largest_bet["resolved"]??><#if largest_bet["roll"]==1>BIGGER<#else>SMALLER</#if><#else>?</#if></td>
+													<td><#if largest_bet["resolved"]?? && largest_bet["resolved"]="true">${largest_bet["profit"]} NEWB<#else>Unresolved</#if></td>
+											</tr>
+										</#list>
+										<tbody>
+
+										</tbody>
+								</table>
+
+		        </div>
+						<div class="tab-pane" id="house_info">
+								<h2>House info</h2>
+								<table class="table table-striped">
+										<thead>
+												<tr>
+														<th>House address</th>
+														<th>House edge</th>
+														<th>Resolve times</th>
+														<th>Total house fee</th>
+												</tr>
+										</thead>
+
+										<tbody>
+												<tr>
+														<td><a href="/wallet?address=${house_address}">${house_address}</a></td>
+														<td>${house_edge*100}%</td>
+														<td>${house_times}</td>
+														<td>${total_house_fee} NEWB</td>
+												</tr>
+										</tbody>
+								</table>
+						</div>
+		    </div>
+		</div>
+
+</@template.content>

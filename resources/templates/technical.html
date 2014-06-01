@@ -1,0 +1,65 @@
+<#import "template.html" as template>
+<@template.content>
+    <div class="row section">
+
+      <h2>Description</h2>
+      <p>Newbiecoin (NEWB) is a protocol, coin, and client used to bet on dice rolls and other games in a decentralized casino. Owners of the coin may gamble, with randomness provided by published bitcoin block nonce numbers. The protocol is built on top of the Bitcoin blockchain. Coins were created by burning Bitcoins during a creative "Twin Proof of Burn" period.</p>
+
+      <h2>Burn information</h2>
+      <ul>
+        <li><strong>Burn status</strong>: ${ burn_status }</li>
+        <li><strong>Burn period</strong>: Bitcoin blocks ${ pob_trial_start_block } to ${ pob_down_end_block }</li>
+        <li><strong>Coins burned in block[${ pob_trial_start_block } - ${ pob_trial_end_block } ]</strong>: ${ pob_trial_multiplier } NEWB per 1 BTC</li>
+        <li><strong>Coins burned in block[${ pob_max_start_block } - ${ pob_max_end_block } ]</strong>: ${ pob_max_multiplier } NEWB per 1 BTC</li>
+        <li><strong>Coins burned in block[${ pob_down_start_block } - ${ pob_down_end_block } ]</strong>: ${ pob_down_init_multiplier } NEWB per 1 BTC to ${ pob_down_end_multiplier } NEWB per 1 BTC (coins per block scaled linearly in between these blocks)</li>
+
+        <li><strong>Coins burned</strong>: ${ burned_NBC } NEWB (${ burned_BTC } BTC)</li>
+        <li><strong>BTC burn address of Fund</strong>: <a target="_blank" href="http://blockchain.info/address/${ burn_address_fund }">${ burn_address_fund }</a>    ${ burned_NBC_fund } NEWB (${ burned_BTC_fund } BTC)</li>
+        <li><strong>BTC burn address of DarkHole</strong>: <a target="_blank" href="http://blockchain.info/address/${ burn_address_dark }">${ burn_address_dark }</a>    ${ burned_NBC_dark } NEWB (${ burned_BTC_dark } BTC)</li>
+        <li><strong>Maximum coins allowed to be burned</strong>: ${ max_burn } NEWB</li>
+        <li><strong>Maximum coins burned per address</strong>: unlimited</li>
+      </ul>
+      
+      <h2>POS information</h2>
+      <ul>
+        <li><strong>POS status</strong>: ${ pos_status }</li> 
+        <li><strong>POS period</strong>: Bitcoin blocks ${ pos_first_block } to ${ pos_end_block }</li>
+        <li><strong>POS cycle</strong>: Every ${ pos_wait_blocks } blocks </li>
+        <li><strong>Interest</strong>: ${ pos_interest }% for a cycle </li>
+        <li><strong>Maximum coins allowed to be payed</strong>:  unlimited</li>
+        <li><strong>Maximum coins payed per address</strong>: unlimited</li>
+      </ul> 
+
+      <h2>Casino information</h2>
+      <ul>
+        <li><strong>House edge</strong>: ${ house_edge*100 }%</li>
+		<li><strong>House address</strong>: ${ house_address }</li>
+      </ul>
+      
+
+      <h2>Betting</h2>
+        <p>Generally speaking, when you bet, you specify a bet size, a choice of smaller or bigger. </p>
+      <h2>Randomness</h2>
+<p>Newbiecoin uses the nonce number in bitcoin block to resolve bets.</p>
+<p>Starting from the first block of the Newbiecoin, every 100 bitcoin blocks is a betting round.</p>
+
+<p>After a betting round, at the 6th block, the Newbiecoin wallet software would resolve the bets in last round.The rules are as follows:</p>
+<ul>
+<li>The last digit of the nonce number in the 1st bitcoin block after the last betting round  would be used to judge who win or lost in last betting round. If the last digit is  0,1,2,3 or 4, the gamblers who bet "SMALLER" win the bet. Otherwise if the last digit is  5,6,7,8 or 9, the gamblers who bet "BIGGER" win.</li>
+<li>If the total bet NEWB of winners is equal to or greater than the total bet NEWB of losers, each winner get back his bet + percentage split of the wagers of losers, while losers lose their entire wager.</li>
+<li>If the total bet NEWB of winners is less than the total bet NEWB of losers, each winner get back his bet x2, then  losers split the remaining NEWB in percentage .</li>
+<li>1% earnings of the winners  would be automatically paid to the Newbiecoin growth fund, while losers don't have to pay.</li>
+<li>If no one bet BIGGER or SMALLER in a round , this round will be "void" and the original bets would be returned to each betting account.</li>
+</ul>
+<p>One might assume that when a Newbiecoin gambler wins or loses a bet, NEWB is transferred between his wallet and the wallets of the other NEWB holders. In fact, this is not the way Newbiecoin's payout system works. When a Newbiecoin gambler wins or loses a bet, his balance is the only balance that changes, but the effect is still the same as in the standard payout system. </p>
+<p>You can check the nonce number of each bitcoin block at  https://blockchain.info/ </p>
+
+		  <h2>Benefits of Newbiecoin's payout accounting</h2>
+				<p>There are some major benefits of Newbiecoin's payout system versus the standard method of payout accounting.<p>
+				<ul>
+					<li>NEWB can trade on an exchange without the exchange having to worry about its balance fluctuating due to bets being won and lost.</li>
+				<li>Accounting is cleaner. Under the standard method of payout accounting, because bets can't be resolved instantaneously, Newbiecoin would have to at least partially freeze funds of all parties while waiting for bets to resolve.</li>
+				</ul>
+
+    </div>
+</@template.content>
