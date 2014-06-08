@@ -189,6 +189,18 @@ public class Util {
 		return 0;
 	}
 	
+	public static Integer getLastBlockTime() {
+		Database db = Database.getInstance();
+		ResultSet rs = db.executeQuery("select * from blocks order by block_index desc limit 1;");
+		try {
+			while(rs.next()) {
+				return rs.getInt("block_time");
+			}
+		} catch (SQLException e) {
+		}	
+		return 0;
+	}
+	
 	public static String getBlockHash(Integer blockIndex) {
 		Database db = Database.getInstance();
 		ResultSet rs = db.executeQuery("select block_hash from blocks where block_index='"+blockIndex.toString()+"';");

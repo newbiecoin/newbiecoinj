@@ -21,7 +21,7 @@ public class Config {
 	
 	//version
 	public static Integer majorVersion = 2;
-	public static Integer minorVersion = 0;
+	public static Integer minorVersion = 1;
 	public static String version = Integer.toString(majorVersion)+"."+Integer.toString(minorVersion);
 	public static Integer majorVersionDB = 1;
 	public static Integer minorVersionDB = 2;
@@ -66,6 +66,13 @@ public class Config {
 	public static Integer betStartBlock=firstBlock+1;
 	public static Integer betPeriodBlocks = 100;
 	public static Integer betResolveWaitBlocks = 5;
+	
+	//Bet worldcup
+	public static String houseWorldCupFunctionName = "bet worldcup fee";
+	
+	public static Integer WORLDCUP2014_BETTING_START_UTC = 1402272000; //UTC 2014-06-09 00:00:00
+	public static Integer WORLDCUP2014_BETTING_END_UTC = 1403913600;  //UTC 2014-06-28 00:00:00
+	public static Integer WORLDCUP2014_RESOLVE_SCHEME_UTC = 1405285200; //UTC 2014-07-13 21:00:00
 	
 	//bitcoin
 	public static Integer dustSize = 5430*2;

@@ -173,6 +173,8 @@ public class Blocks implements Runnable {
 			peerGroup.startAndWait();
 			peerGroup.addEventListener(new NewbiecoinPeerEventListener());
 			peerGroup.downloadBlockChain();
+
+			BetWorldCup.init();
 		} catch (Exception e) {
 			logger.error(e.toString());
 		}
@@ -192,11 +194,13 @@ public class Blocks implements Runnable {
             
             Integer blockHeight = 0 ;
             Integer lastBlock   = 0 ;
+			Integer lastBlockTime=0 ;
             Integer nextBlock   = 0 ;
             
 			try {
 				blockHeight = blockStore.getChainHead().getHeight();
 				lastBlock = Util.getLastBlock();
+				lastBlockTime = Util.getLastBlockTime();
                 
                 statusMessage = 
                 "\n++++++++++++++++++++++++++++++++++\n lastBlock = "+lastBlock.toString()+"\n++++++++++++++++++++++++++++++++++";
@@ -257,6 +261,7 @@ public class Blocks implements Runnable {
 						parseFrom(nextBlock, true);
 					}
 					Bet.resolve(blockHeight);
+					BetWorldCup.resolve(blockHeight,lastBlockTime);
 					Order.expire();
                 }
             }catch (Exception e) {
@@ -298,6 +303,7 @@ public class Blocks implements Runnable {
 				importTransaction(tx, block, blockHeight);
 			}
 			Bet.resolve(blockHeight); 
+			BetWorldCup.resolve(blockHeight,new Long(block.getTimeSeconds()).intValue());
 			Order.expire();
 		} catch (SQLException e) {
 		}
@@ -444,6 +450,7 @@ public class Blocks implements Runnable {
                     Integer blockTime = rs.getInt("block_time");  //Added for POS
 					parseBlock(blockIndex,blockTime);
 					Bet.resolve(blockIndex);
+					BetWorldCup.resolve(blockIndex,blockTime);
 					Order.expire(blockIndex);
 				}
 			} catch (SQLException e) {
@@ -509,6 +516,8 @@ public class Blocks implements Runnable {
 					if (messageType!=null && messageType.size()>=4 && message!=null) {
 						if (messageType.get(3)==Bet.id.byteValue()) {
 							Bet.parse(txIndex, message);
+						} else if (messageType.get(3)==BetWorldCup.id.byteValue()) {
+							BetWorldCup.parse(txIndex, message);
 						} else if (messageType.get(3)==Send.id.byteValue()) {
 							Send.parse(txIndex, message);
 						} else if (messageType.get(3)==Order.id.byteValue()) {

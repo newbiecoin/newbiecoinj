@@ -370,6 +370,22 @@ public class Server implements Runnable {
 				return modelAndView(attributes, "casino.html");
 			}
 		});
+		post(new FreeMarkerRoute("/worldcup") {
+			@Override
+			public ModelAndView handle(Request request, Response response) {
+				setConfiguration(configuration);
+				Map<String, Object> attributes = handleWorldCupRequest(request);
+				return modelAndView(attributes, "worldcup.html");
+			}
+		});
+		get(new FreeMarkerRoute("/worldcup") {
+			@Override
+			public ModelAndView handle(Request request, Response response) {
+				setConfiguration(configuration);
+				Map<String, Object> attributes = handleWorldCupRequest(request);
+				return modelAndView(attributes, "worldcup.html");
+			}
+		});
 		get(new FreeMarkerRoute("/error") {
 			@Override
 			public ModelAndView handle(Request request, Response response) {
@@ -871,22 +887,60 @@ public class Server implements Runnable {
 				attributes.put("error", "Please input the NEWB amount that you want to bet.");
 			}
 		}
-		
-		Integer currentBetStartBlock=lastBtcBlock-(lastBtcBlock-Config.betStartBlock) % Config.betPeriodBlocks;
+		Integer nextBtcBlock=lastBtcBlock+1;
+		Integer currentBetStartBlock=nextBtcBlock-(nextBtcBlock-Config.betStartBlock) % Config.betPeriodBlocks;
 		Integer currentBetEndBlock=currentBetStartBlock+Config.betPeriodBlocks-1;
 		Integer prevBetStartBlock=currentBetStartBlock-Config.betPeriodBlocks;
 		Integer prevBetEndBlock=currentBetStartBlock-1;
 		
-		attributes.put("betting_start_block", currentBetStartBlock);
-		attributes.put("betting_end_block", currentBetEndBlock);
-		attributes.put("prev_bet_start_block", prevBetStartBlock);
-		attributes.put("prev_bet_end_block", prevBetEndBlock);
+		attributes.put("betting_start_block", currentBetStartBlock.toString());
+		attributes.put("betting_end_block", currentBetEndBlock.toString());
+		attributes.put("prev_bet_start_block", prevBetStartBlock.toString());
+		attributes.put("prev_bet_end_block", prevBetEndBlock.toString());
 		
-		if(lastNbcBlock>prevBetEndBlock+Config.betResolveWaitBlocks)
-			attributes.put("prev_bet_status", "Resolved");
-		else
-			attributes.put("prev_bet_status", "Pending resolved");
+		Integer lastResolveBlockIndex=prevBetEndBlock+Config.betResolveWaitBlocks+1;
 		
+		String bettingStatus="Betting";
+
+		if(lastBtcBlock<currentBetEndBlock){
+			Integer  waitBlocks=currentBetEndBlock-lastBtcBlock;
+			String   aboutWaitTimeDesc="";
+			Integer  aboutHours=new Double(java.lang.Math.floor(new Double(10*waitBlocks).doubleValue()/new Double(60).doubleValue())).intValue();
+			if(aboutHours>0)
+				aboutWaitTimeDesc=aboutHours.toString() + " hours";
+			Integer  aboutWaitMins=(10*waitBlocks)%60;
+			if(aboutWaitMins>0)
+				aboutWaitTimeDesc=aboutWaitTimeDesc+" "+aboutWaitMins.toString()+" minutes";
+			
+			bettingStatus="Betting , left "+waitBlocks.toString()+" blocks about "+aboutWaitTimeDesc;
+		} 
+		attributes.put("betting_status", bettingStatus);
+		
+		
+		String prevBetStatus="Syncing your wallet.";
+		
+		if(lastBtcBlock<lastResolveBlockIndex){
+			Integer  waitBlocks=lastResolveBlockIndex-lastBtcBlock;
+			Integer  aboutWaitMins=10*waitBlocks;
+			
+			prevBetStatus="Pending resolved. Please wait about "+aboutWaitMins.toString()+" minutes";
+		} else{
+			Database db = Database.getInstance();
+			ResultSet rs = db.executeQuery("select * from blocks where block_index="+lastResolveBlockIndex+";");
+			try {
+				if(rs.next()) {
+					prevBetStatus="Resolved at Block("+lastResolveBlockIndex.toString()+") "+Util.timeFormat(rs.getInt("block_time"))+" .";
+					if(lastNbcBlock<lastResolveBlockIndex) {
+						prevBetStatus = prevBetStatus + " Syncing your wallet.";
+					}
+				} 
+			} catch (SQLException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+		attributes.put("prev_bet_status", prevBetStatus);
+
 		Database db = Database.getInstance();
 		
 		//get house info
@@ -1018,6 +1072,299 @@ public class Server implements Runnable {
 			bets.add(map);
 		}
 		attributes.put("my_bets_pending", bets);
+
+		return attributes;
+	}
+	
+	public Map<String, Object> handleWorldCupRequest(Request request) {
+		Map<String, Object> attributes = new HashMap<String, Object>();
+		request.session(true);
+		attributes = updateChatStatus(request, attributes);
+		attributes.put("title", "WorldCup");
+		
+		Blocks blocks = Blocks.getInstance();
+		Integer lastBtcBlock=blocks.getHeight();
+		Integer lastNbcBlock=Util.getLastBlock();
+		attributes.put("blocksBTC", lastBtcBlock);
+		attributes.put("blocksNBC", lastNbcBlock);
+		attributes.put("version", Config.version);
+		attributes.put("min_version", Util.getMinVersion());
+		attributes.put("min_version_major", Util.getMinMajorVersion());
+		attributes.put("min_version_minor", Util.getMinMinorVersion());
+		attributes.put("version_major", Config.majorVersion);
+		attributes.put("version_minor", Config.minorVersion);
+		Blocks.getInstance().versionCheck();
+		if (Blocks.getInstance().parsing) attributes.put("parsing", Blocks.getInstance().parsingBlock);
+		
+		String address = Util.getAddresses().get(0);
+		if (request.session().attributes().contains("address")) {
+			address = request.session().attribute("address");
+		}
+		if (request.queryParams().contains("address")) {
+			address = request.queryParams("address");
+			request.session().attribute("address", address);
+		}
+		ArrayList<HashMap<String, Object>> addresses = new ArrayList<HashMap<String, Object>>();
+		for (String addr : Util.getAddresses()) {
+			HashMap<String,Object> map = new HashMap<String,Object>();	
+			map.put("address", addr);
+			map.put("balance_NBC", Util.getBalance(addr, "NBC").floatValue() / Config.unit.floatValue());
+			addresses.add(map);
+		}
+		attributes.put("address", address);				
+		attributes.put("addresses", addresses);
+		for (ECKey key : blocks.wallet.getKeys()) {
+			if (key.toAddress(blocks.params).toString().equals(address)) {
+				attributes.put("own", true);
+			}
+		}
+		
+		if (request.queryParams().contains("form") && request.queryParams("form").equals("bet")) {
+			String source = request.queryParams("source");
+			
+			String betStr=request.queryParams("bet");
+			if(betStr.length()>0){
+				try {
+					Double rawBet = Double.parseDouble(betStr);
+					Short championTeamId = Short.parseShort(request.queryParams("champion"));
+					Short secondTeamId = Short.parseShort(request.queryParams("second"));
+					BigInteger bet = new BigDecimal(rawBet*Config.unit).toBigInteger();
+				
+					Transaction tx = BetWorldCup.create(source,  bet, championTeamId,secondTeamId);
+					blocks.sendTransaction(tx);
+					attributes.put("success", "Thank you for betting! Your request had been submited.Please wait confirms for about 6 blocks.");
+				} catch (Exception e) {
+					attributes.put("error", e.getMessage());
+				}
+			} else {
+				attributes.put("error", "Please input the NEWB amount and the valid champion&second teams that you want to bet.");
+			}
+		}
+		if (request.queryParams().contains("form") && request.queryParams("form").equals("broadcast")) {
+			try {
+				Short championTeamId = Short.parseShort(request.queryParams("champion"));
+				Short secondTeamId = Short.parseShort(request.queryParams("second"));
+			
+				Transaction tx = BetWorldCup.createResolvedBroadcast(championTeamId,secondTeamId);
+				blocks.sendTransaction(tx);
+				attributes.put("success", "The broadcast had been submited.Please wait confirms for about 6 blocks.");
+			} catch (Exception e) {
+				attributes.put("error", e.getMessage());
+			}
+		}
+		
+		attributes.put("betting_start_time", Util.timeFormat(Config.WORLDCUP2014_BETTING_START_UTC));
+		attributes.put("betting_end_time", Util.timeFormat(Config.WORLDCUP2014_BETTING_END_UTC));
+		attributes.put("resolve_scheme_time", Util.timeFormat(Config.WORLDCUP2014_RESOLVE_SCHEME_UTC));
+		
+		Integer lastBlockTime=Util.getLastBlockTime();
+		
+		String teamSelectHtml="";
+		for(int tt=1;tt<=32;tt++){
+			Short teamId=new Short(new Integer(tt).toString());
+			
+			teamSelectHtml=teamSelectHtml+"<option value='"+teamId.toString()+"'>"+BetWorldCup.getTeamLabel(teamId)+"</item>";
+		}
+		attributes.put("team_select_html",teamSelectHtml);
+		
+		String bettingStatus="";
+		if(lastBlockTime<Config.WORLDCUP2014_BETTING_START_UTC){
+			bettingStatus="Waiting";
+		} else if(lastBlockTime<Config.WORLDCUP2014_BETTING_END_UTC) { 
+			Integer  waitSeconds=Config.WORLDCUP2014_BETTING_END_UTC-lastBlockTime;
+			String   aboutWaitTimeDesc="";
+			Integer  aboutDays=new Double(java.lang.Math.floor(waitSeconds.doubleValue()/new Double(60*60*24).doubleValue())).intValue();
+			if(aboutDays>0)
+				aboutWaitTimeDesc=aboutDays.toString() + " days";
+			
+			waitSeconds=waitSeconds%(60*60*24);
+			Integer  aboutHours=new Double( java.lang.Math.floor(waitSeconds.doubleValue() /new Double(60*60).doubleValue())).intValue();
+			if(aboutHours>0)
+				aboutWaitTimeDesc=aboutHours.toString() + " hours";
+			
+			if(aboutDays==0 && aboutHours==0){
+				waitSeconds=waitSeconds%(60*60);
+				Integer  aboutWaitMins=new Double( java.lang.Math.floor(waitSeconds.doubleValue() /new Double(60).doubleValue())).intValue();
+				if(aboutWaitMins>0){
+					bettingStatus="Betting will be closed soon  , left only about "+aboutWaitMins.toString()+" minutes.";
+					attributes.put("betting_enabled", "true");
+				}else
+					bettingStatus="Betting closed.";
+				
+			}else{
+				bettingStatus="Betting , left about "+aboutWaitTimeDesc;
+				attributes.put("betting_enabled", "true");
+			}
+		} else if(lastBlockTime<Config.WORLDCUP2014_RESOLVE_SCHEME_UTC) { 
+			bettingStatus="Pending resolved";
+		} else {
+			Short rolled_result=BetWorldCup.getResolvedResult();
+			if(rolled_result==null){
+				bettingStatus="Waiting for the resolved broadcast";
+			} else {
+				bettingStatus="Resolved! The Champion&Second are "+BetWorldCup.getBetSetLabel(rolled_result);
+			}
+			if(Config.houseAddressFund.equals(address)){
+				attributes.put("house_broadcast_enabled", "true");
+			}
+		}
+		attributes.put("betting_status", bettingStatus);
+		
+		Database db = Database.getInstance();
+		
+		//get house info
+		ResultSet rs = db.executeQuery("select count(amount) as fee_count, sum(amount) as sum_fee, avg(amount) as avg_fee from credits where address='"+Config.houseAddressFund+"' and asset='NBC' and calling_function='"+Config.houseWorldCupFunctionName+"';");
+		
+		try {
+			if(rs.next()){
+				BigInteger totalHouseFee=BigInteger.valueOf(rs.getLong("sum_fee"));
+				attributes.put("house_times", rs.getInt("fee_count"));
+				attributes.put("total_house_fee", totalHouseFee.floatValue() / Config.unit.floatValue());
+			}else{
+				attributes.put("house_times", 0);
+				attributes.put("total_house_fee", 0);
+			}
+		} catch (SQLException e) {
+			attributes.put("house_times", "?");
+			attributes.put("total_house_fee", "?");
+		}
+		attributes.put("house_address", Config.houseAddressFund);	
+		attributes.put("house_edge", Config.houseEdge);
+		
+		//get team bet statistics
+		rs = db.executeQuery("select bet_set, count(bet) as bet_count, sum(bet) as sum_bet, avg(bet) as avg_bet, sum(profit) as sum_profit from bets_worldcup where validity='valid' and bet>0 group by bet_set order by sum_bet desc;");
+		ArrayList<HashMap<String, Object>> teams = new ArrayList<HashMap<String, Object>>();
+		try {
+			while (rs.next()) {
+				HashMap<String,Object> map = new HashMap<String,Object>();
+				map.put("bet_set", BetWorldCup.getBetSetLabel(rs.getShort("bet_set")));
+				map.put("bet_count", rs.getDouble("bet_count"));
+				map.put("sum_bet", BigInteger.valueOf(rs.getLong("sum_bet")).doubleValue()/Config.unit.doubleValue());
+				map.put("avg_bet", BigInteger.valueOf(rs.getLong("avg_bet")).doubleValue()/Config.unit.doubleValue());
+				BigInteger sum_profit= BigInteger.valueOf(rs.getLong("sum_profit"));
+				if(sum_profit.compareTo(BigInteger.ZERO)==0)
+					map.put("sum_profit", "(Pending)");
+				else
+					map.put("sum_profit", sum_profit.doubleValue()/Config.unit.doubleValue());
+					
+				teams.add(map);
+			}
+		} catch (SQLException e) {
+		}
+		attributes.put("teams", teams);	
+		
+		//get top winners
+		rs = db.executeQuery("select source, count(bet) as bet_count, avg(bet) as avg_bet, sum(profit) as sum_profit from bets_worldcup where validity='valid' and bet>0  group by source order by sum_profit desc limit 10;");
+		ArrayList<HashMap<String, Object>> winners = new ArrayList<HashMap<String, Object>>();
+		try {
+			while (rs.next()) {
+				HashMap<String,Object> map = new HashMap<String,Object>();
+				map.put("source", rs.getString("source"));
+				map.put("bet_count", rs.getDouble("bet_count"));
+				map.put("avg_bet", BigInteger.valueOf(rs.getLong("avg_bet")).doubleValue()/Config.unit.doubleValue());
+				//map.put("avg_newbie", rs.getDouble("avg_newbie"));
+				BigInteger sum_profit=BigInteger.valueOf(rs.getLong("sum_profit"));
+				if(sum_profit.compareTo(BigInteger.ZERO)>0)
+					map.put("sum_profit", BigInteger.valueOf(rs.getLong("sum_profit")).doubleValue()/Config.unit.doubleValue());
+				else
+					break;
+					
+				winners.add(map);
+			}
+		} catch (SQLException e) {
+		}
+		attributes.put("winners", winners);				
+		
+		//get top 10 highest rollers
+		rs = db.executeQuery("select source, count(bet) as bet_count, sum(bet) as sum_bet,  sum(profit) as sum_profit from bets_worldcup where validity='valid' and bet>0  group by source order by sum(bet) desc limit 10;");
+		ArrayList<HashMap<String, Object>> highRollers = new ArrayList<HashMap<String, Object>>();
+		try {
+			while (rs.next()) {
+				HashMap<String,Object> map = new HashMap<String,Object>();
+				map.put("source", rs.getString("source"));
+				map.put("bet_count", rs.getDouble("bet_count"));
+				map.put("sum_bet", BigInteger.valueOf(rs.getLong("sum_bet")).doubleValue()/Config.unit.doubleValue());
+				//map.put("avg_newbie", rs.getDouble("avg_newbie"));
+				map.put("sum_profit", BigInteger.valueOf(rs.getLong("sum_profit")).doubleValue()/Config.unit.doubleValue());
+				highRollers.add(map);
+			}
+		} catch (SQLException e) {
+		}
+		attributes.put("high_rollers", highRollers);	
+		
+		//get top 10 largest bets_worldcup
+		rs = db.executeQuery("select bets_worldcup.source as source,bet,bet_set,profit,bets_worldcup.tx_hash as tx_hash,roll,resolved,bets_worldcup.tx_index as tx_index,bets_worldcup.block_index,transactions.block_time from bets_worldcup,transactions where bets_worldcup.validity='valid'  and bets_worldcup.bet>0  and bets_worldcup.tx_index=transactions.tx_index order by bets_worldcup.bet desc limit 10;");
+		ArrayList<HashMap<String, Object>> bets_worldcup = new ArrayList<HashMap<String, Object>>();
+		try {
+			while (rs.next()) {
+				HashMap<String,Object> map = new HashMap<String,Object>();
+				map.put("source", rs.getString("source"));
+				map.put("bet", BigInteger.valueOf(rs.getLong("bet")).doubleValue()/Config.unit.doubleValue());
+				map.put("bet_set", BetWorldCup.getBetSetLabel(rs.getShort("bet_set")));
+				map.put("tx_hash", rs.getString("tx_hash"));
+				map.put("resolved", rs.getString("resolved"));
+				map.put("block_index", rs.getString("block_index"));
+				map.put("block_time", Util.timeFormat(rs.getInt("block_time")));
+				map.put("profit", BigInteger.valueOf(rs.getLong("profit")).doubleValue()/Config.unit.doubleValue());
+				bets_worldcup.add(map);
+			}
+		} catch (SQLException e) {
+		}
+		attributes.put("largest_bets", bets_worldcup);
+
+		
+		//get last 200 bets_worldcup
+		rs = db.executeQuery("select bets_worldcup.source as source,bet,bet_set,profit,bets_worldcup.tx_hash as tx_hash,roll,resolved,bets_worldcup.tx_index as tx_index,bets_worldcup.block_index,transactions.block_time from bets_worldcup,transactions where bets_worldcup.validity='valid' and bets_worldcup.bet>0 and bets_worldcup.tx_index=transactions.tx_index order by bets_worldcup.block_index desc, bets_worldcup.tx_index desc limit 200;");
+		bets_worldcup = new ArrayList<HashMap<String, Object>>();
+		try {
+			while (rs.next()) {
+				HashMap<String,Object> map = new HashMap<String,Object>();
+				map.put("source", rs.getString("source"));
+				map.put("bet", BigInteger.valueOf(rs.getLong("bet")).doubleValue()/Config.unit.doubleValue());
+				map.put("bet_set", BetWorldCup.getBetSetLabel(rs.getShort("bet_set")));
+				map.put("tx_hash", rs.getString("tx_hash"));
+				map.put("resolved", rs.getString("resolved"));
+				map.put("block_index", rs.getString("block_index"));
+				map.put("block_time", Util.timeFormat(rs.getInt("block_time")));
+				map.put("profit", BigInteger.valueOf(rs.getLong("profit")).doubleValue()/Config.unit.doubleValue());
+				bets_worldcup.add(map);
+			}
+		} catch (SQLException e) {
+		}
+		attributes.put("bets", bets_worldcup);
+
+		rs = db.executeQuery("select bets_worldcup.source as source,bet,bet_set,profit,bets_worldcup.tx_hash as tx_hash,roll,resolved,bets_worldcup.tx_index as tx_index,bets_worldcup.block_index,transactions.block_time from bets_worldcup,transactions where bets_worldcup.validity='valid' and bets_worldcup.source='"+address+"' and bets_worldcup.tx_index=transactions.tx_index order by bets_worldcup.block_index desc, bets_worldcup.tx_index desc limit 200;");
+		bets_worldcup = new ArrayList<HashMap<String, Object>>();
+		try {
+			while (rs.next()) {
+				HashMap<String,Object> map = new HashMap<String,Object>();
+				map.put("source", rs.getString("source"));
+				map.put("bet", BigInteger.valueOf(rs.getLong("bet")).doubleValue()/Config.unit.doubleValue());
+				map.put("bet_set", BetWorldCup.getBetSetLabel(rs.getShort("bet_set")));
+				map.put("tx_hash", rs.getString("tx_hash"));
+				map.put("resolved", rs.getString("resolved"));	
+				map.put("block_index", rs.getString("block_index"));
+				map.put("block_time", Util.timeFormat(rs.getInt("block_time")));
+				map.put("profit", BigInteger.valueOf(rs.getLong("profit")).doubleValue()/Config.unit.doubleValue());
+				bets_worldcup.add(map);
+			}
+		} catch (SQLException e) {
+		}
+		attributes.put("my_bets", bets_worldcup);
+						
+		List<BetWorldCupInfo> betsPending = BetWorldCup.getPending(address);
+		bets_worldcup = new ArrayList<HashMap<String, Object>>();
+		for (BetWorldCupInfo betInfo : betsPending) {
+			HashMap<String,Object> map = new HashMap<String,Object>();
+			map.put("source", betInfo.source);
+			map.put("bet", betInfo.bet.doubleValue()/Config.unit.doubleValue());
+			map.put("bet_set",BetWorldCup.getBetSetLabel( betInfo.bet_set));
+			map.put("tx_hash", betInfo.txHash);
+			map.put("block_index", betInfo.blockIndex.toString());
+			map.put("block_time", Util.timeFormat(betInfo.blockTime));
+			bets_worldcup.add(map);
+		}
+		attributes.put("my_bets_pending", bets_worldcup);
 
 		return attributes;
 	}

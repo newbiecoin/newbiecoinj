@@ -67,7 +67,8 @@ public class GUI extends Application {
 				
 				Thread progressUpdateThread = new Thread(blocks) { 
 					public void run() {
-						while(blocks.newbiecoinBlock == 0 || blocks.working || blocks.parsing) {
+						Integer lastParsedNewbiecoinBlock=Util.getLastBlock();
+						while(blocks.newbiecoinBlock == 0  || blocks.working || blocks.parsing ||  lastParsedNewbiecoinBlock<blocks.bitcoinBlock ) {
 							if (blocks.newbiecoinBlock > 0) {
 								updateMessage("Block " + blocks.newbiecoinBlock + "/" + blocks.bitcoinBlock);
 							} else {

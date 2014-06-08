@@ -139,9 +139,9 @@
                         <#if my_burns??>
                         <#list my_burns as tx>
                         <tr>
-                            <td><a target="_blank" href="https://blockchain.info/block-index/${tx["block_index"]}/">${tx["block_index"]}</a></td>
+                            <td><a   href="https://blockchain.info/block-index/${tx["block_index"]}/">${tx["block_index"]}</a></td>
                             <td>${ tx["block_time"]}</td>
-                            <td><a target="_blank" href="/wallet?address=${tx["destination"]}">${tx["destination"]}</a></td>
+                            <td><a   href="/wallet?address=${tx["destination"]}">${tx["destination"]}</a></td>
                             <td>${ tx["burned"]?string(",##0.00000000") }</td>
                             <td>${ tx["earned"]?string(",##0.00000000") }</td>
                             <td>${ tx["validity"]}</td>
@@ -170,9 +170,9 @@
                         <#if my_sends??>
                         <#list my_sends as tx>
                         <tr>
-                            <td><a target="_blank" href="https://blockchain.info/block-index/${tx["block_index"]}/">${tx["block_index"]}</a></td>
+                            <td><a   href="https://blockchain.info/block-index/${tx["block_index"]}/">${tx["block_index"]}</a></td>
                             <td>${ tx["block_time"]}</td>
-                            <td><a target="_blank" href="/wallet?address=${tx["destination"]}">${tx["destination"]}</a></td>
+                            <td><a   href="/wallet?address=${tx["destination"]}">${tx["destination"]}</a></td>
                             <td>${ tx["amount"]?string(",##0.00000000") }</td>
                             <td>${ tx["validity"]}</td>
                         </tr>
@@ -199,13 +199,13 @@
                         <#if my_receives??>
                         <#list my_receives as tx>
                         <tr>
-                            <td><a target="_blank" href="https://blockchain.info/block-index/${tx["block_index"]}/">${tx["block_index"]}</a></td>
+                            <td><a   href="https://blockchain.info/block-index/${tx["block_index"]}/">${tx["block_index"]}</a></td>
                             <td>${ tx["block_time"]}</td>
                             <td>
 							<#if !tx["source"]?? || tx["source"]?length lt 20 >
 							${tx["source"]}
 							<#else>
-							<a target="_blank" href="/wallet?address=${tx["source"]}">${tx["source"]}</a>
+							<a   href="/wallet?address=${tx["source"]}">${tx["source"]}</a>
 							</#if>
 							</td>
                             <td>${ tx["amount"]?string(",##0.00000000") }</td>

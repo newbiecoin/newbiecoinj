@@ -68,9 +68,9 @@
 				<tbody>
 					<#list bets as bet>
 							<tr>
-                                    <td><a target="_blank" href="https://blockchain.info/block-index/${bet["block_index"]}/">${bet["block_index"]}</a></td>
+                                    <td><a   href="https://blockchain.info/block-index/${bet["block_index"]}/">${bet["block_index"]}</a></td>
 									<td>${bet["block_time"]}</td>
-									<td><a target="_blank" href="/wallet?address=${bet["source"]}">${bet["source"]}</a></td>
+									<td><a   href="/wallet?address=${bet["source"]}">${bet["source"]}</a></td>
 									<td>${bet["bet"]} NEWB</td>
 									<td><#if bet["bet_bs"]==1>BIGGER<#else>SMALLER</#if></td>
 									<td><#if bet["resolved"]??><#if bet["roll"]==1>BIGGER<#else>SMALLER</#if><#else>Pending</#if></td>

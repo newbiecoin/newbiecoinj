@@ -143,31 +143,7 @@ public class Bet {
 		Transaction tx = blocks.transaction(source, "", BigInteger.ZERO, BigInteger.valueOf(Config.minFee), dataString);
 		return tx;
 	}
-	public static BigInteger factorial(BigInteger n) {
-		BigInteger result = BigInteger.ONE;
 
-		while (!n.equals(BigInteger.ZERO)) {
-			result = result.multiply(n);
-			n = n.subtract(BigInteger.ONE);
-		}
-
-		return result;
-	}
-	public static BigInteger combinations(BigInteger n, BigInteger k) {
-		if (k.compareTo(n)>0) {
-			return BigInteger.ZERO;
-		}else{
-			return factorial(n).divide(factorial(k)).divide(factorial(n.subtract(k)));
-		}
-	}
-	public static Date addDays(Date date, int days)
-	{
-		Calendar cal = Calendar.getInstance();
-		cal.setTime(date);
-		cal.add(Calendar.DATE, days); //minus number would decrement the days
-		return cal.getTime();
-	}
-	
 	public static void resolve(Integer lastBlock) {
 		//resolve bets
 		if(lastBlock<Config.betStartBlock+Config.betPeriodBlocks 
@@ -243,7 +219,6 @@ public class Bet {
 		rs = db.executeQuery("select block_time,blocks.block_index as block_index,tx_index,tx_hash,source,bet,bet_bs,nbc_supply from bets,blocks where bets.block_index=blocks.block_index and bets.validity='valid' and bets.resolved IS NOT 'true' AND bets.block_index>="+resolveStartBlock.toString()+" AND bets.block_index<="+resolveEndBlock.toString()+"  order by block_index asc;");
 		
 		try {
-			BigInteger sumHouseFee = BigInteger.ZERO;
 			while (rs.next()) {
 				String source = rs.getString("source");
 				String txHash = rs.getString("tx_hash");
@@ -255,7 +230,7 @@ public class Bet {
 				Date blockTime = new Date((long)rs.getLong("block_time")*1000);
 
 				logger.info("Attempting to resolve bet "+txHash+" at block "+blockIndex.toString());
-				logger.info("    bet= "+ bet.multiply(BigInteger.valueOf(Config.unit)).toString()+" NBC  bet_bs= "+bet_bs.toString());
+				logger.info("    bet= "+ bet.toString()+" uNBC  bet_bs= "+bet_bs.toString());
 				
 				BigInteger profit = BigInteger.ZERO;
 				BigInteger houseFee = BigInteger.ZERO;
@@ -277,21 +252,17 @@ public class Bet {
 				if(profit.compareTo(BigInteger.ZERO)>0 ){
 					houseFee=new BigDecimal(profit.doubleValue()*Config.houseEdge).toBigInteger( );
 					profit= profit.subtract(houseFee);
-					
-					sumHouseFee=sumHouseFee.add(houseFee);
 				}
-				logger.info("------["+source+"]    profit="+profit.multiply(BigInteger.valueOf(Config.unit)).toString()+" NBC  houseFee="+houseFee.multiply(BigInteger.valueOf(Config.unit)).toString());
+				logger.info("------["+source+"]    profit="+profit.toString()+" uNBC  houseFee="+houseFee.toString()+" uNBC");
 				
 				db.executeUpdate("update bets set profit='"+profit.toString()+"',roll='"+rolled_bs+"', resolved='true' where tx_index='"+txIndex+"';");
 			
 				BigInteger betReturn = bet.add(profit);
 				if(betReturn.compareTo(BigInteger.ZERO)>0)
 					Util.credit(source, "NBC", betReturn, "bet return", lastTxHash, lastBlock);
+				if(houseFee.compareTo(BigInteger.ZERO)>0 )
+					Util.credit(Config.houseAddressFund, "NBC", houseFee, Config.houseFunctionName, lastTxHash, lastBlock);
 			}
-			
-			logger.info("------["+Config.houseAddressFund+"]    sumHouseFee="+sumHouseFee.multiply(BigInteger.valueOf(Config.unit)).toString()+" NBC");
-			if(sumHouseFee.compareTo(BigInteger.ZERO)>0 )
-				Util.credit(Config.houseAddressFund, "NBC", sumHouseFee, Config.houseFunctionName, lastTxHash, lastBlock);
 		} catch (SQLException e) {
 			logger.error(e.toString());
 		}
