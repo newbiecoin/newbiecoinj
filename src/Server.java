@@ -1180,7 +1180,7 @@ public class Server implements Runnable {
 			waitSeconds=waitSeconds%(60*60*24);
 			Integer  aboutHours=new Double( java.lang.Math.floor(waitSeconds.doubleValue() /new Double(60*60).doubleValue())).intValue();
 			if(aboutHours>0)
-				aboutWaitTimeDesc=aboutHours.toString() + " hours";
+				aboutWaitTimeDesc=aboutWaitTimeDesc+" "+aboutHours.toString() + " hours";
 			
 			if(aboutDays==0 && aboutHours==0){
 				waitSeconds=waitSeconds%(60*60);
