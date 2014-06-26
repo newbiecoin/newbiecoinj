@@ -28,27 +28,29 @@ public class JsonRpcServiceImpl implements JsonRpcService {
 		BigInteger quantity = new BigDecimal(amount*Config.unit).toBigInteger();
 		try {
 			Transaction tx = Send.create(source, destination, "NBC", quantity);
-			blocks.sendTransaction(tx);
-			System.out.println("Success! You sent "+amount+" NBC to "+destination+".");
-			return "success";
+			blocks.sendTransaction(source, tx);
+			logger.info("Success! You sent "+amount+" NBC to "+destination+".");
+			return tx.getHashAsString();
 		} catch (Exception e) {
-			System.out.println("Error! There was a problem with your transaction: "+e.getMessage());						
+			logger.info("Error! There was a problem with your transaction: "+e.getMessage());						
+			return "Error: "+e.getMessage();
 		}
-		return "failure";
 	}
 	
 	public String getSends(String address) {
 		Database db = Database.getInstance();
+		Blocks blocks = Blocks.getInstance();
 		//get my sends
 		ResultSet rs = db.executeQuery("select * from sends where (source='"+address+"') and asset='NBC' and validity='valid' order by block_index desc, tx_index desc;");
 		JSONArray jsonArray = new JSONArray();
 		try {
 			while (rs.next()) {
 				HashMap<String,Object> map = new HashMap<String,Object>();
-				map.put("amount", BigInteger.valueOf(rs.getLong("amount")).doubleValue()/Config.unit.doubleValue());
+				map.put("amount", String.format("%.8f", BigInteger.valueOf(rs.getLong("amount")).doubleValue()/Config.unit.doubleValue()));
 				map.put("tx_hash", rs.getString("tx_hash"));
 				map.put("source", rs.getString("source"));
 				map.put("destination", rs.getString("destination"));
+				map.put("confirmations", Math.max(blocks.bitcoinBlock - rs.getInt("block_index") + 1,0));
 				jsonArray.put(map);
 			}
 		} catch (SQLException e) {
@@ -58,16 +60,18 @@ public class JsonRpcServiceImpl implements JsonRpcService {
 	
 	public String getReceives(String address) {
 		Database db = Database.getInstance();
+		Blocks blocks = Blocks.getInstance();
 		//get my receives
 		ResultSet rs = db.executeQuery("select * from sends where (destination='"+address+"') and asset='NBC' and validity='valid' order by block_index desc, tx_index desc;");
 		JSONArray jsonArray = new JSONArray();
 		try {
 			while (rs.next()) {
 				HashMap<String,Object> map = new HashMap<String,Object>();
-				map.put("amount", BigInteger.valueOf(rs.getLong("amount")).doubleValue()/Config.unit.doubleValue());
+				map.put("amount", String.format("%.8f", BigInteger.valueOf(rs.getLong("amount")).doubleValue()/Config.unit.doubleValue()));
 				map.put("tx_hash", rs.getString("tx_hash"));
 				map.put("source", rs.getString("source"));
 				map.put("destination", rs.getString("destination"));
+				map.put("confirmations", Math.max(blocks.bitcoinBlock - rs.getInt("block_index") + 1,0));
 				jsonArray.put(map);
 				
 			}
@@ -76,9 +80,19 @@ public class JsonRpcServiceImpl implements JsonRpcService {
 		return jsonArray.toString();									
 	}
 	
-	public void importPrivateKey(String privateKey) {
+	public String importPrivKey(String privateKey) {
+		return importPrivateKey(privateKey);
+	}
+	public String importPrivateKey(String privateKey) {
 		Blocks blocks = Blocks.getInstance();
-		blocks.importPrivateKey(privateKey);
+		String address;
+		try {
+			address = blocks.importPrivateKey(privateKey);
+			BigInteger balanceBTC = Util.getBalance(address, "BTC");
+			return "\""+address+"\""+":"+String.format("%.8f",balanceBTC.doubleValue() / Config.unit.doubleValue());
+		} catch (Exception e) {
+			return "Error: "+e.getMessage();
+		}
 	}
 
 	public void reparse() {

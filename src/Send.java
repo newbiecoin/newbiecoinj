@@ -53,12 +53,12 @@ public class Send {
 					String asset = Util.getAssetName(assetId);
 					String validity = "invalid";
 					BigInteger amountToTransfer = BigInteger.ZERO;
-					if (!source.equals("") && !destination.equals("") && asset.equals("NBC")) {
+					if (!source.equals("") && !destination.equals("") && asset.equals("NBC") && amount.compareTo(BigInteger.ZERO)>0) {
 						BigInteger sourceBalance = Util.getBalance(source, asset);
 						amountToTransfer = amount.min(sourceBalance);
 						validity = "valid";
 						if (amountToTransfer.compareTo(BigInteger.ZERO)>0) {
-							Util.debit(source, asset, amountToTransfer, "Send", txHash, blockIndex);
+							Util.debit(source, asset, amountToTransfer, "Send", txHash, blockIndex);							
 							Util.credit(destination, asset, amountToTransfer, "Send", txHash, blockIndex);								
 						}
 					}
@@ -69,7 +69,7 @@ public class Send {
 		}
 	}
 	public static Transaction create(String source, String destination, String asset, BigInteger amount) throws Exception {
-		if (!source.equals("") && !destination.equals("") && asset.equals("NBC")) {
+		if (!source.equals("") && !destination.equals("") && asset.equals("NBC") && amount.compareTo(BigInteger.ZERO)>0) {
 			BigInteger sourceBalance = Util.getBalance(source, asset);
 			Integer assetId = Util.getAssetId(asset);
 			if (sourceBalance.compareTo(amount)>=0) {
@@ -92,8 +92,12 @@ public class Send {
 			} else {
 				throw new Exception("Please send less than your balance.");
 			}
+		} else if (!source.equals("") && !destination.equals("") && asset.equals("BTC") && amount.compareTo(BigInteger.ZERO)>0) {
+			Blocks blocks = Blocks.getInstance();
+			Transaction txBTC = blocks.transaction(source, destination, amount, BigInteger.valueOf(Config.minFee), "");
+			return txBTC;			
 		} else {
-			throw new Exception("Please specify a source address and destination address, and only send NBC.");
+			throw new Exception("Please specify a source address and destination address, and send more than 0 NBC.");
 		}
 	}
 }

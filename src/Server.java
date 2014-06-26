@@ -3,6 +3,7 @@ import static spark.Spark.post;
 import static spark.Spark.setPort;
 
 import java.io.File;
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.net.URISyntaxException;
@@ -10,11 +11,14 @@ import java.security.CodeSource;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 
-
+import org.json.JSONException;
+import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,6 +32,7 @@ import spark.template.freemarker.FreeMarkerRoute;
 import com.google.bitcoin.core.Address;
 import com.google.bitcoin.core.ECKey;
 import com.google.bitcoin.core.Transaction;
+import com.google.common.collect.Lists;
 
 import freemarker.template.Configuration;
 
@@ -44,11 +49,13 @@ public class Server implements Runnable {
 	} 
 	
 	public Map<String, Object> updateChatStatus(Request request, Map<String, Object> attributes) {
+		/*
 		if (request.session().attributes().contains("chat_open")) {
 			attributes.put("chat_open", request.session().attribute("chat_open"));
 		} else {
 			attributes.put("chat_open", 1);
 		}
+		*/
 		return attributes;
 	}
 	
@@ -85,7 +92,7 @@ public class Server implements Runnable {
 		get(new Route("/supply") {
 			@Override
 			public Object handle(Request request, Response response) {
-				return Util.nbcSupply().toString();
+				return String.format("%.8f", Util.nbcSupply().doubleValue() / Config.unit);
 			}
 		});
 		get(new Route("/chat_status_update") {
@@ -112,9 +119,10 @@ public class Server implements Runnable {
 				if (request.queryParams().contains("reparse")) {
 					blocks.reparse();
 				}
-				
-				attributes.put("blocksBTC", blocks.getHeight());
-				attributes.put("blocksNBC", Util.getLastBlock());
+
+				attributes.put("supply", Util.nbcSupply().floatValue() / Config.unit.floatValue());
+				attributes.put("blocksBTC", blocks.bitcoinBlock);
+				attributes.put("blocksNBC", blocks.newbiecoinBlock);
 				attributes.put("version", Config.version);
 				attributes.put("news_url", Config.newsUrl);
 				attributes.put("min_version", Util.getMinVersion());
@@ -193,8 +201,12 @@ public class Server implements Runnable {
 				setConfiguration(configuration);
 				Map<String, Object> attributes = new HashMap<String, Object>();
 				request.session(true);
+				Blocks blocks = Blocks.getInstance();
 				attributes = updateChatStatus(request, attributes);
 				attributes.put("title", "Participate");
+				attributes.put("supply", Util.nbcSupply().floatValue() / Config.unit.floatValue());
+				attributes.put("blocksBTC", blocks.bitcoinBlock);
+				attributes.put("blocksNBC", blocks.newbiecoinBlock);
 				attributes.put("version", Config.version);
 				attributes.put("min_version", Util.getMinVersion());
 				attributes.put("min_version_major", Util.getMinMajorVersion());
@@ -212,8 +224,13 @@ public class Server implements Runnable {
 				setConfiguration(configuration);
 				Map<String, Object> attributes = new HashMap<String, Object>();
 				request.session(true);
+				
+				Blocks blocks = Blocks.getInstance();
 				attributes = updateChatStatus(request, attributes);
 				attributes.put("title", "Community");
+				attributes.put("supply", Util.nbcSupply().floatValue() / Config.unit.floatValue());
+				attributes.put("blocksBTC", blocks.bitcoinBlock);
+				attributes.put("blocksNBC", blocks.newbiecoinBlock);
 				attributes.put("version", Config.version);
 				attributes.put("min_version", Util.getMinVersion());
 				attributes.put("min_version_major", Util.getMinMajorVersion());
@@ -231,12 +248,16 @@ public class Server implements Runnable {
 				setConfiguration(configuration);
 				Map<String, Object> attributes = new HashMap<String, Object>();
 				request.session(true);
-                
-                Integer btcBlockHeight=Blocks.getInstance().getHeight();
-                Integer lastBlock = Util.getLastBlock();
+				
+				Blocks blocks = Blocks.getInstance();
+
+                Integer btcBlockHeight=blocks.bitcoinBlock;
                 
 				attributes = updateChatStatus(request, attributes);
 				attributes.put("title", "Technical");
+				attributes.put("supply", Util.nbcSupply().floatValue() / Config.unit.floatValue());
+				attributes.put("blocksBTC", blocks.bitcoinBlock);
+				attributes.put("blocksNBC", blocks.newbiecoinBlock);
 				attributes.put("version", Config.version);
 				attributes.put("min_version", Util.getMinVersion());	
 				attributes.put("min_version_major", Util.getMinMajorVersion());
@@ -338,6 +359,73 @@ public class Server implements Runnable {
 				return modelAndView(attributes, "exchange.html");
 			}
 		});	
+		get(new FreeMarkerRoute("/unspents") {
+			@Override
+			public ModelAndView handle(Request request, Response response) {
+				setConfiguration(configuration);
+				Map<String, Object> attributes = new HashMap<String, Object>();
+				request.session(true);
+				attributes = updateChatStatus(request, attributes);
+				attributes.put("title", "Unspents");
+				
+				Blocks blocks = Blocks.getInstance();
+				blocks.deletePending();
+				attributes.put("supply", Util.nbcSupply().floatValue() / Config.unit.floatValue());
+				attributes.put("blocksBTC", blocks.bitcoinBlock);
+				attributes.put("blocksNBC", blocks.newbiecoinBlock);
+				attributes.put("version", Config.version);
+				attributes.put("min_version", Util.getMinVersion());
+				attributes.put("min_version_major", Util.getMinMajorVersion());
+				attributes.put("min_version_minor", Util.getMinMinorVersion());
+				attributes.put("version_major", Config.majorVersion);
+				attributes.put("version_minor", Config.minorVersion);
+				Blocks.getInstance().versionCheck();
+				if (Blocks.getInstance().parsing) attributes.put("parsing", Blocks.getInstance().parsingBlock);
+				
+				String address = Util.getAddresses().get(0);
+				request.session(true);
+				if (request.session().attributes().contains("address")) {
+					address = request.session().attribute("address");
+				}
+				if (request.queryParams().contains("address")) {
+					address = request.queryParams("address");
+					request.session().attribute("address", address);
+				}
+				ArrayList<HashMap<String, Object>> addresses = new ArrayList<HashMap<String, Object>>();
+				for (String addr : Util.getAddresses()) {
+					HashMap<String,Object> map = new HashMap<String,Object>();	
+					map.put("address", addr);
+					map.put("balance_NBC", Util.getBalance(addr, "NBC").floatValue() / Config.unit.floatValue());
+					addresses.add(map);
+				}
+				attributes.put("address", address);
+				attributes.put("addresses", addresses);
+				for (ECKey key : blocks.wallet.getKeys()) {
+					if (key.toAddress(blocks.params).toString().equals(address)) {
+						attributes.put("own", true);
+					}
+				}
+				
+				Double unspentTotal = 0.0;
+				List<UnspentOutput> unspentOutputs = Util.getUnspents(address);
+				ArrayList<HashMap<String, Object>> unspents = new ArrayList<HashMap<String, Object>>();
+				for (UnspentOutput unspent : unspentOutputs) {
+					HashMap<String,Object> map = new HashMap<String,Object>();	
+					map.put("amount", unspent.amount);
+					map.put("tx_hash", unspent.txid);
+					map.put("vout", unspent.vout);
+					map.put("type", unspent.type);
+					map.put("confirmations", unspent.confirmations);
+					unspentTotal += unspent.amount;
+					unspents.add(map);
+				}
+				attributes.put("unspents", unspents);
+				attributes.put("unspent_address", Util.unspentAddress(address));
+				attributes.put("unspent_total", unspentTotal);
+
+				return modelAndView(attributes, "unspents.html");
+			}
+		});			
 		post(new FreeMarkerRoute("/wallet") {
 			@Override
 			public ModelAndView handle(Request request, Response response) {
@@ -404,8 +492,9 @@ public class Server implements Runnable {
 		attributes.put("title", "Exchange");
 		
 		Blocks blocks = Blocks.getInstance();
-		attributes.put("blocksBTC", blocks.getHeight());
-		attributes.put("blocksNBC", Util.getLastBlock());
+		attributes.put("supply", Util.nbcSupply().floatValue() / Config.unit.floatValue());
+		attributes.put("blocksBTC", blocks.bitcoinBlock);
+		attributes.put("blocksNBC", blocks.newbiecoinBlock);
 		attributes.put("version", Config.version);
 		attributes.put("min_version", Util.getMinVersion());
 		attributes.put("min_version_major", Util.getMinMajorVersion());
@@ -442,7 +531,7 @@ public class Server implements Runnable {
 			String txHash = request.queryParams("tx_hash");
 			try {
 				Transaction tx = Cancel.create(txHash);
-				blocks.sendTransaction(tx);
+				blocks.sendTransaction(address,tx);
 				attributes.put("success", "Your request for canceling order has been submited.Please wait confirms for about 6 blocks.");
 			} catch (Exception e) {
 				attributes.put("error", e.getMessage());
@@ -452,7 +541,7 @@ public class Server implements Runnable {
 			String orderMatchId = request.queryParams("order_match_id");
 			try {
 				Transaction tx = BTCPay.create(orderMatchId);
-				blocks.sendTransaction(tx);
+				blocks.sendTransaction(address,tx);
 				attributes.put("success", "Your payment had been submited.Please wait confirms for about 6 blocks.");
 			} catch (Exception e) {
 				attributes.put("error", e.getMessage());
@@ -467,7 +556,7 @@ public class Server implements Runnable {
 			BigInteger expiration = BigInteger.valueOf(Long.parseLong(request.queryParams("expiration")));
 			try {
 				Transaction tx = Order.create(source, "BTC", btcQuantity, "NBC", quantity, expiration, BigInteger.ZERO, BigInteger.ZERO);
-				blocks.sendTransaction(tx);
+				blocks.sendTransaction(source,tx);
 				attributes.put("success", "Your order of buying NEWB had been submited.Please wait confirms for about 6 blocks.");
 			} catch (Exception e) {
 				attributes.put("error", e.getMessage());
@@ -482,7 +571,7 @@ public class Server implements Runnable {
 			BigInteger expiration = BigInteger.valueOf(Long.parseLong(request.queryParams("expiration")));
 			try {
 				Transaction tx = Order.create(source, "NBC", quantity, "BTC", btcQuantity, expiration, BigInteger.ZERO, BigInteger.ZERO);
-				blocks.sendTransaction(tx);
+				blocks.sendTransaction(source,tx);
 				attributes.put("success", "Your order of selling NEWB had been submited.Please wait confirms for about 6 blocks.");
 			} catch (Exception e) {
 				attributes.put("error", e.getMessage());
@@ -583,8 +672,9 @@ public class Server implements Runnable {
 		attributes.put("title", "Wallet");
 		
 		Blocks blocks = Blocks.getInstance();
-		attributes.put("blocksBTC", blocks.getHeight());
-		attributes.put("blocksNBC", Util.getLastBlock());
+		attributes.put("supply", Util.nbcSupply().floatValue() / Config.unit.floatValue());
+		attributes.put("blocksBTC", blocks.bitcoinBlock);
+		attributes.put("blocksNBC", blocks.newbiecoinBlock);
 		attributes.put("version", Config.version);
 		attributes.put("min_version", Util.getMinVersion());
 		attributes.put("min_version_major", Util.getMinMajorVersion());
@@ -622,10 +712,44 @@ public class Server implements Runnable {
 			}
 			if (importKey != null) {
 				logger.info("Reimporting private key transactions");
-				blocks.importPrivateKey(importKey.toString());
-				attributes.put("success", "Your transactions have been reimported.");
+				try {
+					blocks.importPrivateKey(importKey);
+					attributes.put("success", "Your transactions have been reimported.");
+				} catch (Exception e) {
+					attributes.put("error", "Error when reimporting transactions: "+e.getMessage());
+				}
 			}
 		}
+		
+		if (request.queryParams().contains("form") && request.queryParams("form").equals("send")) {
+			String source = request.queryParams("source");
+			String destination = request.queryParams("destination");
+			String quantityStr=request.queryParams("quantity");
+			
+			try{
+				Address.getParametersFromAddress(destination);
+			} catch(Exception e){
+				destination="";
+			}
+
+			if(destination.length()==0){
+				attributes.put("error", "Please input a valid destination address  that you want to send.");
+			}else if(quantityStr.length()==0){
+				attributes.put("error", "Please input the NEWB amount that you want to send.");
+			} else {
+				try {
+					Double rawQuantity = Double.parseDouble(quantityStr);
+					BigInteger quantity = new BigDecimal(rawQuantity*Config.unit).toBigInteger();
+				
+					Transaction tx = Send.create(source, destination, "NBC", quantity);
+					blocks.sendTransaction(source,tx);
+					attributes.put("success", "Your request of sending NEWB had been submited.Please wait confirms for about 6 blocks.");
+				} catch (Exception e) {
+					attributes.put("error", e.getMessage());
+				}
+			}
+		}
+
 		
 		String address = Util.getAddresses().get(0);
 		Boolean isMyAddress = false;
@@ -652,64 +776,16 @@ public class Server implements Runnable {
 		
 		if (request.queryParams().contains("form") && request.queryParams("form").equals("import")) {
 			String privateKey = request.queryParams("privatekey");
-			
-			if(privateKey.length()==0){
-				attributes.put("error", "Please input the private key string that you want to import.");
-			} else {
+			try {
 				address = Blocks.getInstance().importPrivateKey(privateKey);
 				request.session().attribute("address", address);
+				attributes.put("address", address);				
 				attributes.put("success", "Your private key has been imported.");
-			}
-		}
-		if (request.queryParams().contains("form") && request.queryParams("form").equals("send")) {
-			String source = request.queryParams("source");
-			String destination = request.queryParams("destination");
-			String quantityStr=request.queryParams("quantity");
-			
-			try{
-				Address.getParametersFromAddress(destination);
-			} catch(Exception e){
-				destination="";
-			}
-
-			if(destination.length()==0){
-				attributes.put("error", "Please input a valid destination address  that you want to send.");
-			}else if(quantityStr.length()==0){
-				attributes.put("error", "Please input the NEWB amount that you want to send.");
-			} else {
-				try {
-					Double rawQuantity = Double.parseDouble(quantityStr);
-					BigInteger quantity = new BigDecimal(rawQuantity*Config.unit).toBigInteger();
-				
-					Transaction tx = Send.create(source, destination, "NBC", quantity);
-					blocks.sendTransaction(tx);
-					attributes.put("success", "Your request of sending NEWB had been submited.Please wait confirms for about 6 blocks.");
-				} catch (Exception e) {
-					attributes.put("error", e.getMessage());
-				}
+			} catch (Exception e) {
+				attributes.put("error", "Error when importing private key: "+e.getMessage());
 			}
 		}
 		
-		if (request.queryParams().contains("form") && request.queryParams("form").equals("burn")) {
-			String source = request.queryParams("source");
-			String destination = request.queryParams("destination");
-			String quantityStr=request.queryParams("quantity");
-			if(quantityStr.length()>0){
-				try {
-					Double rawQuantity = Double.parseDouble(request.queryParams("quantity"));
-					BigInteger quantity = new BigDecimal(rawQuantity*Config.unit).toBigInteger();
-				
-					Transaction tx = Burn.create(source, destination, quantity);
-					blocks.sendTransaction(tx);
-					attributes.put("success", "Your request of burning BTC had been submited.Please wait confirms for about 6 blocks.");
-				} catch (Exception e) {
-					attributes.put("error", e.getMessage());
-				}
-			} else {
-				attributes.put("error", "Please input the BTC amount that you want to burn.");
-			}
-		}
-
 		attributes.put("balanceNBC", Util.getBalance(address, "NBC").doubleValue() / Config.unit.doubleValue());
 		attributes.put("balanceBTC", Util.getBalance(address, "BTC").doubleValue() / Config.unit.doubleValue());
 
@@ -717,14 +793,6 @@ public class Server implements Runnable {
 			attributes.put("is_my_wallet", "My");	
 		} else {
 			attributes.put("is_my_wallet", "His");	
-		}
-		
-		Integer btcBlockHeight=Blocks.getInstance().getHeight();
-		if( btcBlockHeight>=Config.pobTrialStartBlock && btcBlockHeight<Config.pobDownEndBlock) {
-			attributes.put("is_burning","ACTIVE" );
-			attributes.put("min_burn_btc", new Double(Config.dustSize.doubleValue() / Config.unit));
-			attributes.put("burn_address_fund", Config.burnAddressFund);
-			attributes.put("burn_address_dark", Config.burnAddressDark);
 		}
 		
 		Database db = Database.getInstance();
@@ -819,22 +887,26 @@ public class Server implements Runnable {
 		}
 		attributes.put("burns", burns);				
 		*/
+
+		//save wallet file
+		try {
+			blocks.wallet.saveToFile(new File(blocks.walletFile));
+		} catch (IOException e) {
+		}
 		
 		return attributes;
 	}
-	
-	
-	public Map<String, Object> handleCasinoRequest(Request request) {
+
+public Map<String, Object> handleCasinoRequest(Request request) {
 		Map<String, Object> attributes = new HashMap<String, Object>();
 		request.session(true);
 		attributes = updateChatStatus(request, attributes);
 		attributes.put("title", "Casino");
 		
 		Blocks blocks = Blocks.getInstance();
-		Integer lastBtcBlock=blocks.getHeight();
-		Integer lastNbcBlock=Util.getLastBlock();
-		attributes.put("blocksBTC", lastBtcBlock);
-		attributes.put("blocksNBC", lastNbcBlock);
+		attributes.put("supply", Util.nbcSupply().floatValue() / Config.unit.floatValue());
+		attributes.put("blocksBTC", blocks.bitcoinBlock);
+		attributes.put("blocksNBC", blocks.newbiecoinBlock);
 		attributes.put("version", Config.version);
 		attributes.put("min_version", Util.getMinVersion());
 		attributes.put("min_version_major", Util.getMinMajorVersion());
@@ -878,7 +950,7 @@ public class Server implements Runnable {
 					BigInteger bet = new BigDecimal(rawBet*Config.unit).toBigInteger();
 				
 					Transaction tx = Bet.create(source,  bet, bigORsmall);
-					blocks.sendTransaction(tx);
+					blocks.sendTransaction(source,tx);
 					attributes.put("success", "Thank you for betting! Your request had been submited.Please wait confirms for about 6 blocks.");
 				} catch (Exception e) {
 					attributes.put("error", e.getMessage());
@@ -887,6 +959,8 @@ public class Server implements Runnable {
 				attributes.put("error", "Please input the NEWB amount that you want to bet.");
 			}
 		}
+		Integer lastBtcBlock=blocks.bitcoinBlock;
+		Integer lastNbcBlock=blocks.newbiecoinBlock;
 		Integer nextBtcBlock=lastBtcBlock+1;
 		Integer currentBetStartBlock=nextBtcBlock-(nextBtcBlock-Config.betStartBlock) % Config.betPeriodBlocks;
 		Integer currentBetEndBlock=currentBetStartBlock+Config.betPeriodBlocks-1;
@@ -1083,10 +1157,9 @@ public class Server implements Runnable {
 		attributes.put("title", "WorldCup");
 		
 		Blocks blocks = Blocks.getInstance();
-		Integer lastBtcBlock=blocks.getHeight();
-		Integer lastNbcBlock=Util.getLastBlock();
-		attributes.put("blocksBTC", lastBtcBlock);
-		attributes.put("blocksNBC", lastNbcBlock);
+		attributes.put("supply", Util.nbcSupply().floatValue() / Config.unit.floatValue());
+		attributes.put("blocksBTC", blocks.bitcoinBlock);
+		attributes.put("blocksNBC", blocks.newbiecoinBlock);
 		attributes.put("version", Config.version);
 		attributes.put("min_version", Util.getMinVersion());
 		attributes.put("min_version_major", Util.getMinMajorVersion());
@@ -1131,7 +1204,7 @@ public class Server implements Runnable {
 					BigInteger bet = new BigDecimal(rawBet*Config.unit).toBigInteger();
 				
 					Transaction tx = BetWorldCup.create(source,  bet, championTeamId,secondTeamId);
-					blocks.sendTransaction(tx);
+					blocks.sendTransaction(source,tx);
 					attributes.put("success", "Thank you for betting! Your request had been submited.Please wait confirms for about 6 blocks.");
 				} catch (Exception e) {
 					attributes.put("error", e.getMessage());
@@ -1146,7 +1219,7 @@ public class Server implements Runnable {
 				Short secondTeamId = Short.parseShort(request.queryParams("second"));
 			
 				Transaction tx = BetWorldCup.createResolvedBroadcast(championTeamId,secondTeamId);
-				blocks.sendTransaction(tx);
+				blocks.sendTransaction(address,tx);
 				attributes.put("success", "The broadcast had been submited.Please wait confirms for about 6 blocks.");
 			} catch (Exception e) {
 				attributes.put("error", e.getMessage());
@@ -1157,7 +1230,7 @@ public class Server implements Runnable {
 		attributes.put("betting_end_time", Util.timeFormat(Config.WORLDCUP2014_BETTING_END_UTC));
 		attributes.put("resolve_scheme_time", Util.timeFormat(Config.WORLDCUP2014_RESOLVE_SCHEME_UTC));
 		
-		Integer lastBlockTime=Util.getLastBlockTime();
+		Integer lastBlockTime=Util.getLastBlockTimestamp();
 		
 		String teamSelectHtml="";
 		for(int tt=1;tt<=32;tt++){
