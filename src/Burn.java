@@ -38,7 +38,7 @@ public class Burn {
 				if (rsBurns.next()) {
 					totalBurns = BigInteger.valueOf(rsBurns.getInt("earned"));
 				}
-				maxBurns = BigInteger.valueOf(Config.maxBurn).multiply(BigInteger.valueOf(Config.unit));
+				maxBurns = BigInteger.valueOf(Config.maxBurn).multiply(BigInteger.valueOf(Config.nbc_unit));
 
                 Double multiplier = getPobMultiplier(blockIndex);
                 statusMessage = "\n++++++++++++++++++++++++++++++++++\n Block "+blockIndex.toString() +" 's multiplier is "+multiplier.toString()+"\n++++++++++++++++++++++++++++++++++\n";

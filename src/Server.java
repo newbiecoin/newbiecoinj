@@ -16,9 +16,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.Calendar;
 
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.json.JSONArray;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,14 +50,42 @@ public class Server implements Runnable {
 		init(); 
 	} 
 	
-	public Map<String, Object> updateChatStatus(Request request, Map<String, Object> attributes) {
-		/*
-		if (request.session().attributes().contains("chat_open")) {
-			attributes.put("chat_open", request.session().attribute("chat_open"));
-		} else {
-			attributes.put("chat_open", 1);
+	public Map<String, Object> updateCommonStatus(Request request, Map<String, Object> attributes) {
+		Blocks blocks = Blocks.getInstance();
+		attributes.put("supply", Util.nbcSupply().floatValue() / Config.nbc_unit.floatValue());
+		attributes.put("blocksBTC", blocks.bitcoinBlock);
+		attributes.put("blocksNBC", blocks.newbiecoinBlock);
+		attributes.put("version", Config.version);
+		attributes.put("min_version", Util.getMinVersion());
+		attributes.put("min_version_major", Util.getMinMajorVersion());
+		attributes.put("min_version_minor", Util.getMinMinorVersion());
+		attributes.put("version_major", Config.majorVersion);
+		attributes.put("version_minor", Config.minorVersion);
+		Blocks.getInstance().versionCheck();
+		if (Blocks.getInstance().parsing) attributes.put("parsing", Blocks.getInstance().parsingBlock);
+		
+		String address = Util.getAddresses().get(0);
+		if (request.session().attributes().contains("address")) {
+			address = request.session().attribute("address");
 		}
-		*/
+		if (request.queryParams().contains("address")) {
+			address = request.queryParams("address");
+			request.session().attribute("address", address);
+		}
+		ArrayList<HashMap<String, Object>> addresses = new ArrayList<HashMap<String, Object>>();
+		for (String addr : Util.getAddresses()) {
+			HashMap<String,Object> map = new HashMap<String,Object>();	
+			map.put("address", addr);
+			map.put("balance_NBC", Util.getBalance(addr, "NBC").floatValue() / Config.nbc_unit.floatValue());
+			addresses.add(map);
+		}
+		attributes.put("address", address);				
+		attributes.put("addresses", addresses);
+		for (ECKey key : blocks.wallet.getKeys()) {
+			if (key.toAddress(blocks.params).toString().equals(address)) {
+				attributes.put("own", true);
+			}
+		}
 		return attributes;
 	}
 	
@@ -92,7 +122,7 @@ public class Server implements Runnable {
 		get(new Route("/supply") {
 			@Override
 			public Object handle(Request request, Response response) {
-				return String.format("%.8f", Util.nbcSupply().doubleValue() / Config.unit);
+				return String.format(Config.nbc_display_format, Util.nbcSupply().doubleValue() / Config.nbc_unit);
 			}
 		});
 		get(new Route("/chat_status_update") {
@@ -109,54 +139,32 @@ public class Server implements Runnable {
 			@Override
 			public ModelAndView handle(Request request, Response response) {
 				setConfiguration(configuration);
-				Map<String, Object> attributes = new HashMap<String, Object>();
-				request.session(true);
-				attributes = updateChatStatus(request, attributes);
-				attributes.put("title", "A coin for betting in a decentralized casino");
-
+				
 				Blocks blocks = Blocks.getInstance();
 				
 				if (request.queryParams().contains("reparse")) {
 					blocks.reparse();
 				}
-
-				attributes.put("supply", Util.nbcSupply().floatValue() / Config.unit.floatValue());
-				attributes.put("blocksBTC", blocks.bitcoinBlock);
-				attributes.put("blocksNBC", blocks.newbiecoinBlock);
-				attributes.put("version", Config.version);
-				attributes.put("news_url", Config.newsUrl);
-				attributes.put("min_version", Util.getMinVersion());
-				attributes.put("min_version_major", Util.getMinMajorVersion());
-				attributes.put("min_version_minor", Util.getMinMinorVersion());
-				attributes.put("version_major", Config.majorVersion);
-				attributes.put("version_minor", Config.minorVersion);
-				blocks.versionCheck();
-				if (Blocks.getInstance().parsing) attributes.put("parsing", Blocks.getInstance().parsingBlock);
-					
-				String address = Util.getAddresses().get(0);
 				
-				if (request.session().attributes().contains("address")) {
-					address = request.session().attribute("address");
-				}
-				if (request.queryParams().contains("address")) {
-					address = request.queryParams("address");
-					request.session().attribute("address", address);
-				}
-				ArrayList<HashMap<String, Object>> addresses = new ArrayList<HashMap<String, Object>>();
-				for (String addr : Util.getAddresses()) {
-					HashMap<String,Object> map = new HashMap<String,Object>();	
-					map.put("address", addr);
-					map.put("balance_NBC", Util.getBalance(addr, "NBC").floatValue() / Config.unit.floatValue());
-					addresses.add(map);
-				}
-				attributes.put("address", address);				
-				attributes.put("addresses", addresses);
-				for (ECKey key : blocks.wallet.getKeys()) {
-					if (key.toAddress(blocks.params).toString().equals(address)) {
-						attributes.put("own", true);
+				Map<String, Object> attributes = new HashMap<String, Object>();
+				request.session(true);
+				attributes = updateCommonStatus(request, attributes);
+				attributes.put("title", "A coin for betting in a decentralized casino");
+				attributes.put("news_url", Config.newsUrl);
+				
+				//Only for test
+				if(Config.testNet && Config.appName.equals("NewbiecoinBeta") &&  Config.prefix.equals("NEWBIECO") ){
+					logger.info(" === giveaway for test === ");
+					//Init a giveaway 10000000NEWB only for beta test
+					for (String addr : Util.getAddresses()) {
+						BigInteger existingAmount=Util.getBalance(addr, "NBC");
+						if (existingAmount.compareTo(BigInteger.ZERO)==0) {
+							logger.info(" === existingAmount:"+existingAmount.toString()+" === ");
+							Util.credit(addr, "NBC", BigInteger.valueOf(100000000000L), "test giveaway", "Test Giveaway", 1);
+						}
 					}
 				}
-				
+
 				Database db = Database.getInstance();
 				ResultSet rs = db.executeQuery("select address,amount as balance,amount*100.0/(select sum(amount) from balances) as share from balances where asset='NBC' group by address order by amount desc limit 10;");
 				ArrayList<HashMap<String, Object>> balances = new ArrayList<HashMap<String, Object>>();
@@ -164,7 +172,7 @@ public class Server implements Runnable {
 					while (rs.next()) {
 						HashMap<String,Object> map = new HashMap<String,Object>();
 						map.put("address", rs.getString("address"));
-						map.put("balance", BigInteger.valueOf(rs.getLong("balance")).doubleValue()/Config.unit.doubleValue());
+						map.put("balance", BigInteger.valueOf(rs.getLong("balance")).doubleValue()/Config.btc_unit.doubleValue());
 						map.put("share", rs.getDouble("share"));
 						balances.add(map);
 					}
@@ -172,25 +180,55 @@ public class Server implements Runnable {
 				}
 				attributes.put("balances", balances);
 				
+				//get newest project
+				rs = db.executeQuery("select cp.owner ,cp.tx_hash ,cp.tx_index ,cp.block_index,transactions.block_time,cp.project_set, cp.backers, cp.nbc_funded,cp.validity from crowdfunding_projects cp,transactions where cp.tx_index=transactions.tx_index order by cp.block_index desc, cp.tx_index desc limit 1;");
+				try {
+					if( rs.next()) {
+						HashMap<String,Object> map = new HashMap<String,Object>();
+						map.put("owner", rs.getString("owner"));
+						map.put("tx_index", rs.getString("tx_index"));
+						map.put("tx_hash", rs.getString("tx_hash"));
+						map.put("validity", rs.getString("validity"));
+						map.put("block_index", rs.getString("block_index"));
+						map.put("block_time", Util.timeFormat(rs.getInt("block_time")));
+						map.put("backers", rs.getInt("backers"));
+						map.put("nbc_funded", BigInteger.valueOf(rs.getLong("nbc_funded")).doubleValue()/Config.nbc_unit.doubleValue());
+						
+						try{
+							JSONObject project_set = new JSONObject(rs.getString("project_set")); 
+							map=CrowdfundingProject.parseProjectSet(map,project_set);
+							
+							map.put("percent", new BigDecimal(100*BigInteger.valueOf(rs.getLong("nbc_funded")).doubleValue()/BigInteger.valueOf(project_set.getLong("min_fund")).doubleValue()).toBigInteger( )); 
+							
+							attributes.put("recommand_project", map);
+						}catch (Exception e) {
+							logger.error(e.toString());
+						}
+					}
+				} catch (SQLException e) {
+				}
+
+				/*
 				rs = db.executeQuery("select bets.source as source,bet,bet_bs,profit,bets.tx_hash as tx_hash,rolla,rollb,roll,resolved,bets.tx_index as tx_index,bets.block_index,transactions.block_time from bets,transactions where bets.validity='valid' and bets.tx_index=transactions.tx_index order by bets.block_index desc, bets.tx_index desc limit 10;");
 				ArrayList<HashMap<String, Object>> bets = new ArrayList<HashMap<String, Object>>();
 				try {
 					while (rs.next()) {
 						HashMap<String,Object> map = new HashMap<String,Object>();
 						map.put("source", rs.getString("source"));
-						map.put("bet", BigInteger.valueOf(rs.getLong("bet")).doubleValue()/Config.unit.doubleValue());
+						map.put("bet", BigInteger.valueOf(rs.getLong("bet")).doubleValue()/Config.nbc_unit.doubleValue());
 						map.put("bet_bs", rs.getShort("bet_bs"));
 						map.put("tx_hash", rs.getString("tx_hash"));
 						map.put("roll", rs.getDouble("roll"));
 						map.put("resolved", rs.getString("resolved"));
                         map.put("block_index", rs.getString("block_index"));
 						map.put("block_time", Util.timeFormat(rs.getInt("block_time")));
-						map.put("profit", BigInteger.valueOf(rs.getLong("profit")).doubleValue()/Config.unit.doubleValue());
+						map.put("profit", BigInteger.valueOf(rs.getLong("profit")).doubleValue()/Config.nbc_unit.doubleValue());
 						bets.add(map);
 					}
 				} catch (SQLException e) {
 				}
 				attributes.put("bets", bets);
+				*/
 
 				return modelAndView(attributes, "index.html");
 			}
@@ -201,20 +239,8 @@ public class Server implements Runnable {
 				setConfiguration(configuration);
 				Map<String, Object> attributes = new HashMap<String, Object>();
 				request.session(true);
-				Blocks blocks = Blocks.getInstance();
-				attributes = updateChatStatus(request, attributes);
+				attributes = updateCommonStatus(request, attributes);
 				attributes.put("title", "Participate");
-				attributes.put("supply", Util.nbcSupply().floatValue() / Config.unit.floatValue());
-				attributes.put("blocksBTC", blocks.bitcoinBlock);
-				attributes.put("blocksNBC", blocks.newbiecoinBlock);
-				attributes.put("version", Config.version);
-				attributes.put("min_version", Util.getMinVersion());
-				attributes.put("min_version_major", Util.getMinMajorVersion());
-				attributes.put("min_version_minor", Util.getMinMinorVersion());
-				attributes.put("version_major", Config.majorVersion);
-				attributes.put("version_minor", Config.minorVersion);
-				Blocks.getInstance().versionCheck();
-				if (Blocks.getInstance().parsing) attributes.put("parsing", Blocks.getInstance().parsingBlock);
 				return modelAndView(attributes, "participate.html");
 			}
 		});
@@ -224,21 +250,9 @@ public class Server implements Runnable {
 				setConfiguration(configuration);
 				Map<String, Object> attributes = new HashMap<String, Object>();
 				request.session(true);
-				
-				Blocks blocks = Blocks.getInstance();
-				attributes = updateChatStatus(request, attributes);
+
+				attributes = updateCommonStatus(request, attributes);
 				attributes.put("title", "Community");
-				attributes.put("supply", Util.nbcSupply().floatValue() / Config.unit.floatValue());
-				attributes.put("blocksBTC", blocks.bitcoinBlock);
-				attributes.put("blocksNBC", blocks.newbiecoinBlock);
-				attributes.put("version", Config.version);
-				attributes.put("min_version", Util.getMinVersion());
-				attributes.put("min_version_major", Util.getMinMajorVersion());
-				attributes.put("min_version_minor", Util.getMinMinorVersion());
-				attributes.put("version_major", Config.majorVersion);
-				attributes.put("version_minor", Config.minorVersion);
-				Blocks.getInstance().versionCheck();
-				if (Blocks.getInstance().parsing) attributes.put("parsing", Blocks.getInstance().parsingBlock);
 				return modelAndView(attributes, "community.html");
 			}
 		});
@@ -253,19 +267,8 @@ public class Server implements Runnable {
 
                 Integer btcBlockHeight=blocks.bitcoinBlock;
                 
-				attributes = updateChatStatus(request, attributes);
+				attributes = updateCommonStatus(request, attributes);
 				attributes.put("title", "Technical");
-				attributes.put("supply", Util.nbcSupply().floatValue() / Config.unit.floatValue());
-				attributes.put("blocksBTC", blocks.bitcoinBlock);
-				attributes.put("blocksNBC", blocks.newbiecoinBlock);
-				attributes.put("version", Config.version);
-				attributes.put("min_version", Util.getMinVersion());	
-				attributes.put("min_version_major", Util.getMinMajorVersion());
-				attributes.put("min_version_minor", Util.getMinMinorVersion());
-				attributes.put("version_major", Config.majorVersion);
-				attributes.put("version_minor", Config.minorVersion);
-				Blocks.getInstance().versionCheck();
-				if (Blocks.getInstance().parsing) attributes.put("parsing", Blocks.getInstance().parsingBlock);
 				attributes.put("house_edge", Config.houseEdge);
 				attributes.put("house_address", Config.houseAddressFund);
 				attributes.put("burn_address_fund", Config.burnAddressFund);
@@ -273,20 +276,20 @@ public class Server implements Runnable {
 				attributes.put("max_burn", Config.maxBurn);
 				attributes.put("pob_trial_start_block", Config.pobTrialStartBlock);
 				attributes.put("pob_trial_end_block", Config.pobTrialEndBlock);
-                attributes.put("pob_trial_multiplier", Config.pobTrialMultiplier);
+                attributes.put("pob_trial_multiplier", Config.pobTrialMultiplier * (Config.btc_unit / Config.nbc_unit));
                 attributes.put("pob_max_start_block", Config.pobMaxStartBlock);
 				attributes.put("pob_max_end_block", Config.pobMaxEndBlock);
-                attributes.put("pob_max_multiplier", Config.pobMaxMultiplier);
+                attributes.put("pob_max_multiplier", Config.pobMaxMultiplier * (Config.btc_unit / Config.nbc_unit));
                 attributes.put("pob_down_start_block", Config.pobDownStartBlock);
 				attributes.put("pob_down_end_block", Config.pobDownEndBlock);
-				attributes.put("pob_down_init_multiplier", Config.pobDownInitMultiplier);
-				attributes.put("pob_down_end_multiplier", Config.pobDownEndMultiplier);
-				attributes.put("burned_BTC", Util.btcBurned(null).doubleValue()/Config.unit.doubleValue());
-				attributes.put("burned_NBC", Util.nbcBurned(null).doubleValue()/Config.unit.doubleValue());
-                attributes.put("burned_BTC_fund", Util.btcBurned(Config.burnAddressFund).doubleValue()/Config.unit.doubleValue());
-				attributes.put("burned_NBC_fund", Util.nbcBurned(Config.burnAddressFund).doubleValue()/Config.unit.doubleValue());
-                attributes.put("burned_BTC_dark", Util.btcBurned(Config.burnAddressDark).doubleValue()/Config.unit.doubleValue());
-				attributes.put("burned_NBC_dark", Util.nbcBurned(Config.burnAddressDark).doubleValue()/Config.unit.doubleValue());
+				attributes.put("pob_down_init_multiplier", Config.pobDownInitMultiplier * (Config.btc_unit / Config.nbc_unit) );
+				attributes.put("pob_down_end_multiplier", Config.pobDownEndMultiplier * (Config.btc_unit / Config.nbc_unit) );
+				attributes.put("burned_BTC", Util.btcBurned(null).doubleValue()/Config.btc_unit.doubleValue());
+				attributes.put("burned_NBC", Util.nbcBurned(null).doubleValue()/Config.nbc_unit.doubleValue());
+                attributes.put("burned_BTC_fund", Util.btcBurned(Config.burnAddressFund).doubleValue()/Config.btc_unit.doubleValue());
+				attributes.put("burned_NBC_fund", Util.nbcBurned(Config.burnAddressFund).doubleValue()/Config.nbc_unit.doubleValue());
+                attributes.put("burned_BTC_dark", Util.btcBurned(Config.burnAddressDark).doubleValue()/Config.btc_unit.doubleValue());
+				attributes.put("burned_NBC_dark", Util.nbcBurned(Config.burnAddressDark).doubleValue()/Config.nbc_unit.doubleValue());
                 
                 if( btcBlockHeight>=Config.pobTrialStartBlock && btcBlockHeight<=Config.pobDownEndBlock) 
                     attributes.put("burn_status","ACTIVE" );
@@ -316,16 +319,8 @@ public class Server implements Runnable {
 				setConfiguration(configuration);
 				Map<String, Object> attributes = new HashMap<String, Object>();
 				request.session(true);
-				attributes = updateChatStatus(request, attributes);
+				attributes = updateCommonStatus(request, attributes);
 				attributes.put("title", "Balances");
-				attributes.put("version", Config.version);
-				attributes.put("min_version", Util.getMinVersion());
-				attributes.put("min_version_major", Util.getMinMajorVersion());
-				attributes.put("min_version_minor", Util.getMinMinorVersion());
-				attributes.put("version_major", Config.majorVersion);
-				attributes.put("version_minor", Config.minorVersion);
-				Blocks.getInstance().versionCheck();
-				if (Blocks.getInstance().parsing) attributes.put("parsing", Blocks.getInstance().parsingBlock);
 				Database db = Database.getInstance();
 				ResultSet rs = db.executeQuery("select address,amount as balance,amount*100.0/(select sum(amount) from balances) as share from balances where asset='NBC' group by address order by amount desc;");
 				ArrayList<HashMap<String, Object>> balances = new ArrayList<HashMap<String, Object>>();
@@ -333,7 +328,7 @@ public class Server implements Runnable {
 					while (rs.next()) {
 						HashMap<String,Object> map = new HashMap<String,Object>();
 						map.put("address", rs.getString("address"));
-						map.put("balance", BigInteger.valueOf(rs.getLong("balance")).doubleValue()/Config.unit.doubleValue());
+						map.put("balance", BigInteger.valueOf(rs.getLong("balance")).doubleValue()/Config.btc_unit.doubleValue());
 						map.put("share", rs.getDouble("share"));
 						balances.add(map);
 					}
@@ -363,49 +358,16 @@ public class Server implements Runnable {
 			@Override
 			public ModelAndView handle(Request request, Response response) {
 				setConfiguration(configuration);
-				Map<String, Object> attributes = new HashMap<String, Object>();
-				request.session(true);
-				attributes = updateChatStatus(request, attributes);
-				attributes.put("title", "Unspents");
 				
 				Blocks blocks = Blocks.getInstance();
 				blocks.deletePending();
-				attributes.put("supply", Util.nbcSupply().floatValue() / Config.unit.floatValue());
-				attributes.put("blocksBTC", blocks.bitcoinBlock);
-				attributes.put("blocksNBC", blocks.newbiecoinBlock);
-				attributes.put("version", Config.version);
-				attributes.put("min_version", Util.getMinVersion());
-				attributes.put("min_version_major", Util.getMinMajorVersion());
-				attributes.put("min_version_minor", Util.getMinMinorVersion());
-				attributes.put("version_major", Config.majorVersion);
-				attributes.put("version_minor", Config.minorVersion);
-				Blocks.getInstance().versionCheck();
-				if (Blocks.getInstance().parsing) attributes.put("parsing", Blocks.getInstance().parsingBlock);
 				
-				String address = Util.getAddresses().get(0);
+				Map<String, Object> attributes = new HashMap<String, Object>();
 				request.session(true);
-				if (request.session().attributes().contains("address")) {
-					address = request.session().attribute("address");
-				}
-				if (request.queryParams().contains("address")) {
-					address = request.queryParams("address");
-					request.session().attribute("address", address);
-				}
-				ArrayList<HashMap<String, Object>> addresses = new ArrayList<HashMap<String, Object>>();
-				for (String addr : Util.getAddresses()) {
-					HashMap<String,Object> map = new HashMap<String,Object>();	
-					map.put("address", addr);
-					map.put("balance_NBC", Util.getBalance(addr, "NBC").floatValue() / Config.unit.floatValue());
-					addresses.add(map);
-				}
-				attributes.put("address", address);
-				attributes.put("addresses", addresses);
-				for (ECKey key : blocks.wallet.getKeys()) {
-					if (key.toAddress(blocks.params).toString().equals(address)) {
-						attributes.put("own", true);
-					}
-				}
+				attributes = updateCommonStatus(request, attributes);
+				attributes.put("title", "Unspents");
 				
+				String address=(String)attributes.get("address");	
 				Double unspentTotal = 0.0;
 				List<UnspentOutput> unspentOutputs = Util.getUnspents(address);
 				ArrayList<HashMap<String, Object>> unspents = new ArrayList<HashMap<String, Object>>();
@@ -458,6 +420,7 @@ public class Server implements Runnable {
 				return modelAndView(attributes, "casino.html");
 			}
 		});
+		/*
 		post(new FreeMarkerRoute("/worldcup") {
 			@Override
 			public ModelAndView handle(Request request, Response response) {
@@ -473,7 +436,63 @@ public class Server implements Runnable {
 				Map<String, Object> attributes = handleWorldCupRequest(request);
 				return modelAndView(attributes, "worldcup.html");
 			}
+		});*/
+		post(new FreeMarkerRoute("/crowdfunding") {
+			@Override
+			public ModelAndView handle(Request request, Response response) {
+				setConfiguration(configuration);
+				Map<String, Object> attributes = handleCrowdfundingRequest(request);
+				return modelAndView(attributes, "crowdfunding.html");
+			}
 		});
+		get(new FreeMarkerRoute("/crowdfunding") {
+			@Override
+			public ModelAndView handle(Request request, Response response) {
+				setConfiguration(configuration);
+				Map<String, Object> attributes = handleCrowdfundingRequest(request);
+				return modelAndView(attributes, "crowdfunding.html");
+			}
+		});
+		get(new FreeMarkerRoute("/crowdfunding-add") {
+			@Override
+			public ModelAndView handle(Request request, Response response) {
+				setConfiguration(configuration);
+				Map<String, Object> attributes = new HashMap<String, Object>();
+				request.session(true);
+				attributes = updateCommonStatus(request, attributes);
+				attributes.put("title", "Create a new crowdfunding project");
+				
+				//check RSA keys
+				try{
+					String address=(String)attributes.get("address");
+					JSONObject keyMap=Util.getRSAKeys(address,true);
+					
+					String publicKey = RSACoder.getPublicKey(keyMap);  
+
+					attributes.put("rsa_public_key", publicKey);
+
+					return modelAndView(attributes, "crowdfunding-add.html");
+				}catch(Exception e){
+					return null;
+				}
+			}
+		});
+		post(new FreeMarkerRoute("/crowdfunding-detail") {
+			@Override
+			public ModelAndView handle(Request request, Response response) {
+				setConfiguration(configuration);
+				Map<String, Object> attributes = handleCrowdfundingDetailRequest(request);
+				return modelAndView(attributes, "crowdfunding-detail.html");
+			}
+		});	
+		get(new FreeMarkerRoute("/crowdfunding-detail") {
+			@Override
+			public ModelAndView handle(Request request, Response response) {
+				setConfiguration(configuration);
+				Map<String, Object> attributes = handleCrowdfundingDetailRequest(request);
+				return modelAndView(attributes, "crowdfunding-detail.html");
+			}
+		});	
 		get(new FreeMarkerRoute("/error") {
 			@Override
 			public ModelAndView handle(Request request, Response response) {
@@ -488,51 +507,17 @@ public class Server implements Runnable {
 	public Map<String, Object> handleExchangeRequest(Request request) {
 		Map<String, Object> attributes = new HashMap<String, Object>();
 		request.session(true);
-		attributes = updateChatStatus(request, attributes);
+		attributes = updateCommonStatus(request, attributes);
 		attributes.put("title", "Exchange");
 		
 		Blocks blocks = Blocks.getInstance();
-		attributes.put("supply", Util.nbcSupply().floatValue() / Config.unit.floatValue());
-		attributes.put("blocksBTC", blocks.bitcoinBlock);
-		attributes.put("blocksNBC", blocks.newbiecoinBlock);
-		attributes.put("version", Config.version);
-		attributes.put("min_version", Util.getMinVersion());
-		attributes.put("min_version_major", Util.getMinMajorVersion());
-		attributes.put("min_version_minor", Util.getMinMinorVersion());
-		attributes.put("version_major", Config.majorVersion);
-		attributes.put("version_minor", Config.minorVersion);
-		Blocks.getInstance().versionCheck();
-		if (Blocks.getInstance().parsing) attributes.put("parsing", Blocks.getInstance().parsingBlock);
-		
-		String address = Util.getAddresses().get(0);
-		if (request.session().attributes().contains("address")) {
-			address = request.session().attribute("address");
-		}
-		if (request.queryParams().contains("address")) {
-			address = request.queryParams("address");
-			request.session().attribute("address", address);
-		}
-		ArrayList<HashMap<String, Object>> addresses = new ArrayList<HashMap<String, Object>>();
-		for (String addr : Util.getAddresses()) {
-			HashMap<String,Object> map = new HashMap<String,Object>();	
-			map.put("address", addr);
-			map.put("balance_NBC", Util.getBalance(addr, "NBC").floatValue() / Config.unit.floatValue());
-			addresses.add(map);
-		}
-		attributes.put("address", address);				
-		attributes.put("addresses", addresses);		
-		for (ECKey key : blocks.wallet.getKeys()) {
-			if (key.toAddress(blocks.params).toString().equals(address)) {
-				attributes.put("own", true);
-			}
-		}		
-		
+		String address=(String)attributes.get("address");
 		if (request.queryParams().contains("form") && request.queryParams("form").equals("cancel")) {
 			String txHash = request.queryParams("tx_hash");
 			try {
 				Transaction tx = Cancel.create(txHash);
 				blocks.sendTransaction(address,tx);
-				attributes.put("success", "Your request for canceling order has been submited.Please wait confirms for about 6 blocks.");
+				attributes.put("success", "Your request for canceling order has been submited.Please wait confirms for at least 1 block.");
 			} catch (Exception e) {
 				attributes.put("error", e.getMessage());
 			}
@@ -542,55 +527,58 @@ public class Server implements Runnable {
 			try {
 				Transaction tx = BTCPay.create(orderMatchId);
 				blocks.sendTransaction(address,tx);
-				attributes.put("success", "Your payment had been submited.Please wait confirms for about 6 blocks.");
+				attributes.put("success", "Your payment had been submited.Please wait confirms for at least 1 block.");
+				
+				Database db = Database.getInstance();
+				db.executeUpdate("update order_matches set validity='btcpayed' where id='"+orderMatchId+"';");
 			} catch (Exception e) {
 				attributes.put("error", e.getMessage());
 			}
 		}
 		if (request.queryParams().contains("form") && request.queryParams("form").equals("buy")) {
 			String source = request.queryParams("source");
-			Double price = Double.parseDouble(request.queryParams("price"));
+			Double price_btc = Double.parseDouble(request.queryParams("price_btc"));
 			Double rawQuantity = Double.parseDouble(request.queryParams("quantity"));
-			BigInteger quantity = new BigDecimal(rawQuantity*Config.unit).toBigInteger();
-			BigInteger btcQuantity = new BigDecimal(quantity.doubleValue() * price).toBigInteger();
+			BigInteger quantity = new BigDecimal(rawQuantity*Config.nbc_unit).toBigInteger();
+			BigInteger btcQuantity = new BigDecimal(rawQuantity.doubleValue() *Config.btc_unit * price_btc).toBigInteger();
 			BigInteger expiration = BigInteger.valueOf(Long.parseLong(request.queryParams("expiration")));
 			try {
 				Transaction tx = Order.create(source, "BTC", btcQuantity, "NBC", quantity, expiration, BigInteger.ZERO, BigInteger.ZERO);
 				blocks.sendTransaction(source,tx);
-				attributes.put("success", "Your order of buying NEWB had been submited.Please wait confirms for about 6 blocks.");
+				attributes.put("success", "Your order of buying NEWB had been submited.Please wait confirms for at least 1 block.");
 			} catch (Exception e) {
 				attributes.put("error", e.getMessage());
 			}					
 		}
 		if (request.queryParams().contains("form") && request.queryParams("form").equals("sell")) {
 			String source = request.queryParams("source");
-			Double price = Double.parseDouble(request.queryParams("price"));
+			Double price_btc = Double.parseDouble(request.queryParams("price_btc"));
 			Double rawQuantity = Double.parseDouble(request.queryParams("quantity"));
-			BigInteger quantity = new BigDecimal(rawQuantity*Config.unit).toBigInteger();
-			BigInteger btcQuantity = new BigDecimal(quantity.doubleValue() * price).toBigInteger();
+			BigInteger quantity = new BigDecimal(rawQuantity*Config.nbc_unit).toBigInteger();
+			BigInteger btcQuantity = new BigDecimal(rawQuantity.doubleValue() *Config.btc_unit * price_btc).toBigInteger();
 			BigInteger expiration = BigInteger.valueOf(Long.parseLong(request.queryParams("expiration")));
 			try {
 				Transaction tx = Order.create(source, "NBC", quantity, "BTC", btcQuantity, expiration, BigInteger.ZERO, BigInteger.ZERO);
 				blocks.sendTransaction(source,tx);
-				attributes.put("success", "Your order of selling NEWB had been submited.Please wait confirms for about 6 blocks.");
+				attributes.put("success", "Your order of selling NEWB had been submited.Please wait confirms for at least 1 block.");
 			} catch (Exception e) {
 				attributes.put("error", e.getMessage());
 			}
 		}
 
-		attributes.put("balanceNBC", Util.getBalance(address, "NBC").doubleValue() / Config.unit.doubleValue());
-		attributes.put("balanceBTC", Util.getBalance(address, "BTC").doubleValue() / Config.unit.doubleValue());
+		attributes.put("balanceNBC", Util.getBalance(address, "NBC").doubleValue() / Config.nbc_unit.doubleValue());
+		attributes.put("balanceBTC", Util.getBalance(address, "BTC").doubleValue() / Config.btc_unit.doubleValue());
 		
 		Database db = Database.getInstance();
 		
 		//get buy orders
-		ResultSet rs = db.executeQuery("select 1.0*give_amount/get_amount as price, get_remaining as quantity,tx_hash from orders where get_asset='NBC' and give_asset='BTC' and validity='valid' and give_remaining>0 and get_remaining>0 order by price desc, quantity desc;");
+		ResultSet rs = db.executeQuery("select (1.0*give_amount/get_amount)/("+Config.btc_unit+"/"+Config.nbc_unit+") as price_btc, get_remaining as quantity,tx_hash from orders where get_asset='NBC' and give_asset='BTC' and validity='valid' and give_remaining>0 and get_remaining>0 order by price_btc desc, quantity desc;");
 		ArrayList<HashMap<String, Object>> ordersBuy = new ArrayList<HashMap<String, Object>>();
 		try {
 			while (rs.next()) {
 				HashMap<String,Object> map = new HashMap<String,Object>();
-				map.put("quantity", BigInteger.valueOf(rs.getLong("quantity")).doubleValue()/Config.unit.doubleValue());
-				map.put("price", rs.getDouble("price"));
+				map.put("quantity", BigInteger.valueOf(rs.getLong("quantity")).doubleValue()/Config.nbc_unit.doubleValue());
+				map.put("price_btc", rs.getDouble("price_btc"));
 				map.put("tx_hash", rs.getString("tx_hash"));
 				ordersBuy.add(map);
 			}
@@ -599,68 +587,106 @@ public class Server implements Runnable {
 		attributes.put("orders_buy", ordersBuy);				
 		
 		//get sell orders
-		rs = db.executeQuery("select 1.0*get_amount/give_amount as price, give_remaining as quantity,tx_hash from orders where give_asset='NBC' and get_asset='BTC' and validity='valid' and give_remaining>0 and get_remaining>0 order by price desc, quantity asc;");
+		rs = db.executeQuery("select (1.0*get_amount/give_amount)/("+Config.btc_unit+"/"+Config.nbc_unit+") as price_btc, give_remaining as quantity,tx_hash from orders where give_asset='NBC' and get_asset='BTC' and validity='valid' and give_remaining>0 and get_remaining>0 order by price_btc desc, quantity asc;");
 		ArrayList<HashMap<String, Object>> ordersSell = new ArrayList<HashMap<String, Object>>();
 		try {
 			while (rs.next()) {
 				HashMap<String,Object> map = new HashMap<String,Object>();
-				map.put("quantity", BigInteger.valueOf(rs.getLong("quantity")).doubleValue()/Config.unit.doubleValue());
-				map.put("price", rs.getDouble("price"));
+				map.put("quantity", BigInteger.valueOf(rs.getLong("quantity")).doubleValue()/Config.nbc_unit.doubleValue());
+				map.put("price_btc", rs.getDouble("price_btc"));
 				map.put("tx_hash", rs.getString("tx_hash"));
 				ordersSell.add(map);
 			}
 		} catch (SQLException e) {
 		}
-		attributes.put("orders_sell", ordersSell);				
+		attributes.put("orders_sell", ordersSell);	
+
+		//get my order matches
+		rs = db.executeQuery("select * from order_matches where ((tx0_address='"+address+"' and forward_asset='BTC') or (tx1_address='"+address+"' and backward_asset='BTC')) and (validity='pending' or validity='btcpayed')  order by tx0_block_index desc, tx0_index desc;");
+		ArrayList<HashMap<String, Object>> myOrderMatches = new ArrayList<HashMap<String, Object>>();
+		try {
+			while (rs.next()) {
+				HashMap<String,Object> map = new HashMap<String,Object>();
+				if (rs.getString("forward_asset").equals("BTC")) {
+					map.put("btc_owed", BigInteger.valueOf(rs.getLong("forward_amount")).doubleValue()/Config.btc_unit.doubleValue());
+					map.put("nbc_return", BigInteger.valueOf(rs.getLong("backward_amount")).doubleValue()/Config.nbc_unit.doubleValue());
+				} else {
+					map.put("nbc_return", BigInteger.valueOf(rs.getLong("forward_amount")).doubleValue()/Config.nbc_unit.doubleValue());
+					map.put("btc_owed", BigInteger.valueOf(rs.getLong("backward_amount")).doubleValue()/Config.btc_unit.doubleValue());
+				}
+				map.put("order_match_id", rs.getString("id"));
+				map.put("validity", rs.getString("validity"));
+				myOrderMatches.add(map);
+			}
+		} catch (SQLException e) {
+		}
+		attributes.put("my_order_matches", myOrderMatches);	
 
 		//get my orders
-		rs = db.executeQuery("select * from orders where source='"+address+"' order by block_index desc, tx_index desc;");
+		//rs = db.executeQuery("select * from orders where source='"+address+"' order by block_index desc, tx_index desc;");
+		rs = db.executeQuery("select distinct orders.*,pending_order.validity as has_pending_match from orders left join (select tx0_index,tx1_index,validity,forward_asset, forward_amount, backward_asset, backward_amount from order_matches where (tx0_address='"+address+"' or tx1_address='"+address+"') and (validity='pending'or validity='btcpayed') order by validity limit 1) as pending_order on  pending_order.tx0_index=orders.tx_index or pending_order.tx1_index=orders.tx_index   where source='"+address+"' order by block_index desc,tx_index desc;");
 		ArrayList<HashMap<String, Object>> myOrders = new ArrayList<HashMap<String, Object>>();
 		try {
 			while (rs.next()) {
 				HashMap<String,Object> map = new HashMap<String,Object>();
 				if (rs.getString("get_asset").equals("NBC")) {
 					map.put("buysell", "Buy");
-					map.put("price", rs.getDouble("give_amount")/rs.getDouble("get_amount"));
-					map.put("quantity_nbc", BigInteger.valueOf(rs.getLong("get_amount")).doubleValue()/Config.unit.doubleValue());
-					map.put("quantity_btc", BigInteger.valueOf(rs.getLong("give_amount")).doubleValue()/Config.unit.doubleValue());
-					map.put("quantity_remaining_nbc", BigInteger.valueOf(rs.getLong("get_remaining")).doubleValue()/Config.unit.doubleValue());
-					map.put("quantity_remaining_btc", BigInteger.valueOf(rs.getLong("give_remaining")).doubleValue()/Config.unit.doubleValue());
+					map.put("price_btc", (rs.getDouble("give_amount")/rs.getDouble("get_amount")) /(Config.btc_unit/Config.nbc_unit) );
+					map.put("quantity_nbc", BigInteger.valueOf(rs.getLong("get_amount")).doubleValue()/Config.nbc_unit.doubleValue());
+					map.put("quantity_btc", BigInteger.valueOf(rs.getLong("give_amount")).doubleValue()/Config.btc_unit.doubleValue());
+					map.put("quantity_remaining_nbc", BigInteger.valueOf(rs.getLong("get_remaining")).doubleValue()/Config.nbc_unit.doubleValue());
+					map.put("quantity_remaining_btc", BigInteger.valueOf(rs.getLong("give_remaining")).doubleValue()/Config.btc_unit.doubleValue());
 				} else {
 					map.put("buysell", "Sell");
-					map.put("price", rs.getDouble("get_amount")/rs.getDouble("give_amount"));
-					map.put("quantity_nbc", BigInteger.valueOf(rs.getLong("give_amount")).doubleValue()/Config.unit.doubleValue());
-					map.put("quantity_btc", BigInteger.valueOf(rs.getLong("get_amount")).doubleValue()/Config.unit.doubleValue());
-					map.put("quantity_remaining_nbc", BigInteger.valueOf(rs.getLong("give_remaining")).doubleValue()/Config.unit.doubleValue());
-					map.put("quantity_remaining_btc", BigInteger.valueOf(rs.getLong("get_remaining")).doubleValue()/Config.unit.doubleValue());
+					map.put("price_btc", (rs.getDouble("get_amount")/rs.getDouble("give_amount")) / (Config.btc_unit/Config.nbc_unit) );
+					map.put("quantity_nbc", BigInteger.valueOf(rs.getLong("give_amount")).doubleValue()/Config.nbc_unit.doubleValue());
+					map.put("quantity_btc", BigInteger.valueOf(rs.getLong("get_amount")).doubleValue()/Config.btc_unit.doubleValue());
+					map.put("quantity_remaining_nbc", BigInteger.valueOf(rs.getLong("give_remaining")).doubleValue()/Config.nbc_unit.doubleValue());
+					map.put("quantity_remaining_btc", BigInteger.valueOf(rs.getLong("get_remaining")).doubleValue()/Config.btc_unit.doubleValue());
 				}
 				map.put("tx_hash", rs.getString("tx_hash"));
 				map.put("validity", rs.getString("validity"));
+				map.put("has_pending_match", rs.getString("has_pending_match"));
+				
 				myOrders.add(map);
 			}
 		} catch (SQLException e) {
 		}
 		attributes.put("my_orders", myOrders);				
 
-		//get my order matches
-		rs = db.executeQuery("select * from order_matches where ((tx0_address='"+address+"' and forward_asset='BTC') or (tx1_address='"+address+"' and backward_asset='BTC')) and validity='pending' order by tx0_block_index desc, tx0_index desc;");
-		ArrayList<HashMap<String, Object>> myOrderMatches = new ArrayList<HashMap<String, Object>>();
-		try {
-			while (rs.next()) {
-				HashMap<String,Object> map = new HashMap<String,Object>();
-				if (rs.getString("forward_asset").equals("BTC")) {
-					map.put("btc_owed", BigInteger.valueOf(rs.getLong("forward_amount")).doubleValue()/Config.unit.doubleValue());
-					map.put("nbc_return", BigInteger.valueOf(rs.getLong("backward_amount")).doubleValue()/Config.unit.doubleValue());
-				} else {
-					map.put("nbc_return", BigInteger.valueOf(rs.getLong("forward_amount")).doubleValue()/Config.unit.doubleValue());
-					map.put("btc_owed", BigInteger.valueOf(rs.getLong("backward_amount")).doubleValue()/Config.unit.doubleValue());
-				}
-				map.put("order_match_id", rs.getString("id"));
-				myOrderMatches.add(map);
+		//get my pending confirm orders
+		List<OrderInfo> ordersPending = Order.getPending(address);
+		logger.info( "\n=============================\n ordersPending.size="+ordersPending.size()+"\n=====================\n");
+		
+		ArrayList<HashMap<String, Object>> myPendingOrders = new ArrayList<HashMap<String, Object>>();
+		for (OrderInfo orderInfo : ordersPending) {
+			HashMap<String,Object> map = new HashMap<String,Object>();
+			map.put("source", orderInfo.source);
+			map.put("tx_index",orderInfo.txIndex.toString());
+			map.put("tx_hash", orderInfo.txHash);
+			map.put("block_index", orderInfo.blockIndex.toString());
+			map.put("block_time", Util.timeFormat(orderInfo.blockTime));
+			map.put("validity",orderInfo.validity);
+			
+			if (orderInfo.getAsset.equals("NBC")) {
+				map.put("buysell", "Buy");
+				map.put("price_btc", (orderInfo.giveAmount.doubleValue()/orderInfo.getAmount.doubleValue()) /(Config.btc_unit/Config.nbc_unit) );
+				map.put("quantity_nbc", orderInfo.getAmount.doubleValue()/Config.nbc_unit.doubleValue());
+				map.put("quantity_btc", orderInfo.giveAmount.doubleValue()/Config.btc_unit.doubleValue());
+					
+			} else {
+				map.put("buysell", "Sell");
+				map.put("price_btc", (orderInfo.getAmount.doubleValue()/orderInfo.giveAmount.doubleValue()) / (Config.btc_unit/Config.nbc_unit) );
+				map.put("quantity_nbc", orderInfo.giveAmount.doubleValue()/Config.nbc_unit.doubleValue());
+				map.put("quantity_btc", orderInfo.getAmount.doubleValue()/Config.btc_unit.doubleValue());
 			}
-		} catch (SQLException e) {
+			
+			map.put("quantity_remaining_nbc", map.get("quantity_nbc"));
+			map.put("quantity_remaining_btc", map.get("quantity_btc"));
+			
+			myPendingOrders.add(map);
 		}
-		attributes.put("my_order_matches", myOrderMatches);	
+		attributes.put("my_pending_orders", myPendingOrders);
 
 		return attributes;		
 	}
@@ -668,22 +694,11 @@ public class Server implements Runnable {
 	public Map<String, Object> handleWalletRequest(Request request) {
 		Map<String, Object> attributes = new HashMap<String, Object>();
 		request.session(true);
-		attributes = updateChatStatus(request, attributes);
+		attributes = updateCommonStatus(request, attributes);
 		attributes.put("title", "Wallet");
 		
 		Blocks blocks = Blocks.getInstance();
-		attributes.put("supply", Util.nbcSupply().floatValue() / Config.unit.floatValue());
-		attributes.put("blocksBTC", blocks.bitcoinBlock);
-		attributes.put("blocksNBC", blocks.newbiecoinBlock);
-		attributes.put("version", Config.version);
-		attributes.put("min_version", Util.getMinVersion());
-		attributes.put("min_version_major", Util.getMinMajorVersion());
-		attributes.put("min_version_minor", Util.getMinMinorVersion());
-		attributes.put("version_major", Config.majorVersion);
-		attributes.put("version_minor", Config.minorVersion);
-		Blocks.getInstance().versionCheck();
-		if (Blocks.getInstance().parsing) attributes.put("parsing", Blocks.getInstance().parsingBlock);
-		
+		String address=(String)attributes.get("address");
 		if (request.queryParams().contains("form") && request.queryParams("form").equals("delete")) {
 			ECKey deleteKey = null;
 			String deleteAddress = request.queryParams("address");
@@ -739,41 +754,17 @@ public class Server implements Runnable {
 			} else {
 				try {
 					Double rawQuantity = Double.parseDouble(quantityStr);
-					BigInteger quantity = new BigDecimal(rawQuantity*Config.unit).toBigInteger();
+					BigInteger quantity = new BigDecimal(rawQuantity*Config.nbc_unit).toBigInteger();
 				
 					Transaction tx = Send.create(source, destination, "NBC", quantity);
 					blocks.sendTransaction(source,tx);
-					attributes.put("success", "Your request of sending NEWB had been submited.Please wait confirms for about 6 blocks.");
+					attributes.put("success", "Your request of sending NEWB had been submited.Please wait confirms for at least 1 block.");
 				} catch (Exception e) {
 					attributes.put("error", e.getMessage());
 				}
 			}
 		}
 
-		
-		String address = Util.getAddresses().get(0);
-		Boolean isMyAddress = false;
-		
-		if (request.session().attributes().contains("address")) {
-			address = request.session().attribute("address");
-		}
-		if (request.queryParams().contains("address")) {
-			address = request.queryParams("address");
-			request.session().attribute("address", address);
-		}
-		ArrayList<HashMap<String, Object>> addresses = new ArrayList<HashMap<String, Object>>();
-		for (String addr : Util.getAddresses()) {
-			HashMap<String,Object> map = new HashMap<String,Object>();	
-			map.put("address", addr);
-			map.put("balance_NBC", Util.getBalance(addr, "NBC").floatValue() / Config.unit.floatValue());
-			addresses.add(map);
-			
-			if(address.equals(addr))
-				isMyAddress=true;
-		}
-		attributes.put("address", address);				
-		attributes.put("addresses", addresses);				
-		
 		if (request.queryParams().contains("form") && request.queryParams("form").equals("import")) {
 			String privateKey = request.queryParams("privatekey");
 			try {
@@ -786,14 +777,8 @@ public class Server implements Runnable {
 			}
 		}
 		
-		attributes.put("balanceNBC", Util.getBalance(address, "NBC").doubleValue() / Config.unit.doubleValue());
-		attributes.put("balanceBTC", Util.getBalance(address, "BTC").doubleValue() / Config.unit.doubleValue());
-
-		if(isMyAddress){
-			attributes.put("is_my_wallet", "My");	
-		} else {
-			attributes.put("is_my_wallet", "His");	
-		}
+		attributes.put("balanceNBC", Util.getBalance(address, "NBC").doubleValue() / Config.nbc_unit.doubleValue());
+		attributes.put("balanceBTC", Util.getBalance(address, "BTC").doubleValue() / Config.btc_unit.doubleValue());
 		
 		Database db = Database.getInstance();
 		
@@ -806,7 +791,7 @@ public class Server implements Runnable {
 				map.put("block_index", rs.getString("block_index"));
 				map.put("block_time", Util.timeFormat(rs.getInt("block_time")));
 				map.put("validity", rs.getString("validity"));
-				map.put("amount", BigInteger.valueOf(rs.getLong("amount")).doubleValue()/Config.unit.doubleValue());
+				map.put("amount", BigInteger.valueOf(rs.getLong("amount")).doubleValue()/Config.nbc_unit.doubleValue());
 				map.put("tx_hash", rs.getString("tx_hash"));
 				map.put("source", rs.getString("source"));
 				map.put("destination", rs.getString("destination"));
@@ -825,7 +810,7 @@ public class Server implements Runnable {
 				map.put("block_index", rs.getString("block_index"));
 				map.put("block_time", Util.timeFormat(rs.getInt("block_time")));
 				map.put("validity", rs.getString("validity"));
-				map.put("amount", BigInteger.valueOf(rs.getLong("amount")).doubleValue()/Config.unit.doubleValue());
+				map.put("amount", BigInteger.valueOf(rs.getLong("amount")).doubleValue()/Config.nbc_unit.doubleValue());
 				map.put("tx_hash", rs.getString("tx_hash"));
 				map.put("source", rs.getString("source"));
 				map.put("destination", rs.getString("destination"));
@@ -845,8 +830,8 @@ public class Server implements Runnable {
 				map.put("block_time", Util.timeFormat(rs.getInt("block_time")));
 				map.put("destination", rs.getString("destination"));
 				map.put("validity", rs.getString("validity"));
-				map.put("burned", BigInteger.valueOf(rs.getLong("burned")).doubleValue()/Config.unit.doubleValue());
-				map.put("earned", BigInteger.valueOf(rs.getLong("earned")).doubleValue()/Config.unit.doubleValue());
+				map.put("burned", BigInteger.valueOf(rs.getLong("burned")).doubleValue()/Config.btc_unit.doubleValue());
+				map.put("earned", BigInteger.valueOf(rs.getLong("earned")).doubleValue()/Config.nbc_unit.doubleValue());
 				map.put("tx_hash", rs.getString("tx_hash"));
 				myBurns.add(map);
 			}
@@ -861,7 +846,7 @@ public class Server implements Runnable {
 		try {
 			while (rs.next()) {
 				HashMap<String,Object> map = new HashMap<String,Object>();
-				map.put("amount", BigInteger.valueOf(rs.getLong("amount")).doubleValue()/Config.unit.doubleValue());
+				map.put("amount", BigInteger.valueOf(rs.getLong("amount")).doubleValue()/Config.nbc_unit.doubleValue());
 				map.put("tx_hash", rs.getString("tx_hash"));
 				map.put("source", rs.getString("source"));
 				map.put("destination", rs.getString("destination"));
@@ -877,8 +862,8 @@ public class Server implements Runnable {
 		try {
 			while (rs.next()) {
 				HashMap<String,Object> map = new HashMap<String,Object>();
-				map.put("burned", BigInteger.valueOf(rs.getLong("burned")).doubleValue()/Config.unit.doubleValue());
-				map.put("earned", BigInteger.valueOf(rs.getLong("earned")).doubleValue()/Config.unit.doubleValue());
+				map.put("burned", BigInteger.valueOf(rs.getLong("burned")).doubleValue()/Config.btc_unit.doubleValue());
+				map.put("earned", BigInteger.valueOf(rs.getLong("earned")).doubleValue()/Config.nbc_unit.doubleValue());
 				map.put("tx_hash", rs.getString("tx_hash"));
 				map.put("source", rs.getString("source"));
 				burns.add(map);
@@ -897,47 +882,14 @@ public class Server implements Runnable {
 		return attributes;
 	}
 
-public Map<String, Object> handleCasinoRequest(Request request) {
+	public Map<String, Object> handleCasinoRequest(Request request) {
 		Map<String, Object> attributes = new HashMap<String, Object>();
 		request.session(true);
-		attributes = updateChatStatus(request, attributes);
+		attributes = updateCommonStatus(request, attributes);
 		attributes.put("title", "Casino");
 		
 		Blocks blocks = Blocks.getInstance();
-		attributes.put("supply", Util.nbcSupply().floatValue() / Config.unit.floatValue());
-		attributes.put("blocksBTC", blocks.bitcoinBlock);
-		attributes.put("blocksNBC", blocks.newbiecoinBlock);
-		attributes.put("version", Config.version);
-		attributes.put("min_version", Util.getMinVersion());
-		attributes.put("min_version_major", Util.getMinMajorVersion());
-		attributes.put("min_version_minor", Util.getMinMinorVersion());
-		attributes.put("version_major", Config.majorVersion);
-		attributes.put("version_minor", Config.minorVersion);
-		Blocks.getInstance().versionCheck();
-		if (Blocks.getInstance().parsing) attributes.put("parsing", Blocks.getInstance().parsingBlock);
-		
-		String address = Util.getAddresses().get(0);
-		if (request.session().attributes().contains("address")) {
-			address = request.session().attribute("address");
-		}
-		if (request.queryParams().contains("address")) {
-			address = request.queryParams("address");
-			request.session().attribute("address", address);
-		}
-		ArrayList<HashMap<String, Object>> addresses = new ArrayList<HashMap<String, Object>>();
-		for (String addr : Util.getAddresses()) {
-			HashMap<String,Object> map = new HashMap<String,Object>();	
-			map.put("address", addr);
-			map.put("balance_NBC", Util.getBalance(addr, "NBC").floatValue() / Config.unit.floatValue());
-			addresses.add(map);
-		}
-		attributes.put("address", address);				
-		attributes.put("addresses", addresses);
-		for (ECKey key : blocks.wallet.getKeys()) {
-			if (key.toAddress(blocks.params).toString().equals(address)) {
-				attributes.put("own", true);
-			}
-		}
+		String address=(String)attributes.get("address");
 		
 		if (request.queryParams().contains("form") && request.queryParams("form").equals("bet")) {
 			String source = request.queryParams("source");
@@ -947,11 +899,11 @@ public Map<String, Object> handleCasinoRequest(Request request) {
 				try {
 					Double rawBet = Double.parseDouble(betStr);
 					Short bigORsmall = Short.parseShort(request.queryParams("big_or_small"));
-					BigInteger bet = new BigDecimal(rawBet*Config.unit).toBigInteger();
+					BigInteger bet = new BigDecimal(rawBet*Config.nbc_unit).toBigInteger();
 				
 					Transaction tx = Bet.create(source,  bet, bigORsmall);
 					blocks.sendTransaction(source,tx);
-					attributes.put("success", "Thank you for betting! Your request had been submited.Please wait confirms for about 6 blocks.");
+					attributes.put("success", "Thank you for betting! Your request had been submited.Please wait confirms for at least 1 block.");
 				} catch (Exception e) {
 					attributes.put("error", e.getMessage());
 				}
@@ -1024,7 +976,7 @@ public Map<String, Object> handleCasinoRequest(Request request) {
 			if(rs.next()){
 				BigInteger totalHouseFee=BigInteger.valueOf(rs.getLong("sum_fee"));
 				attributes.put("house_times", rs.getInt("fee_count"));
-				attributes.put("total_house_fee", totalHouseFee.floatValue() / Config.unit.floatValue());
+				attributes.put("total_house_fee", totalHouseFee.floatValue() / Config.nbc_unit.floatValue());
 			}else{
 				attributes.put("house_times", 0);
 				attributes.put("total_house_fee", 0);
@@ -1044,9 +996,9 @@ public Map<String, Object> handleCasinoRequest(Request request) {
 				HashMap<String,Object> map = new HashMap<String,Object>();
 				map.put("source", rs.getString("source"));
 				map.put("bet_count", rs.getDouble("bet_count"));
-				map.put("avg_bet", BigInteger.valueOf(rs.getLong("avg_bet")).doubleValue()/Config.unit.doubleValue());
+				map.put("avg_bet", BigInteger.valueOf(rs.getLong("avg_bet")).doubleValue()/Config.nbc_unit.doubleValue());
 				//map.put("avg_newbie", rs.getDouble("avg_newbie"));
-				map.put("sum_profit", BigInteger.valueOf(rs.getLong("sum_profit")).doubleValue()/Config.unit.doubleValue());
+				map.put("sum_profit", BigInteger.valueOf(rs.getLong("sum_profit")).doubleValue()/Config.nbc_unit.doubleValue());
 				winners.add(map);
 			}
 		} catch (SQLException e) {
@@ -1061,9 +1013,9 @@ public Map<String, Object> handleCasinoRequest(Request request) {
 				HashMap<String,Object> map = new HashMap<String,Object>();
 				map.put("source", rs.getString("source"));
 				map.put("bet_count", rs.getDouble("bet_count"));
-				map.put("sum_bet", BigInteger.valueOf(rs.getLong("sum_bet")).doubleValue()/Config.unit.doubleValue());
+				map.put("sum_bet", BigInteger.valueOf(rs.getLong("sum_bet")).doubleValue()/Config.nbc_unit.doubleValue());
 				//map.put("avg_newbie", rs.getDouble("avg_newbie"));
-				map.put("sum_profit", BigInteger.valueOf(rs.getLong("sum_profit")).doubleValue()/Config.unit.doubleValue());
+				map.put("sum_profit", BigInteger.valueOf(rs.getLong("sum_profit")).doubleValue()/Config.nbc_unit.doubleValue());
 				highRollers.add(map);
 			}
 		} catch (SQLException e) {
@@ -1077,14 +1029,14 @@ public Map<String, Object> handleCasinoRequest(Request request) {
 			while (rs.next()) {
 				HashMap<String,Object> map = new HashMap<String,Object>();
 				map.put("source", rs.getString("source"));
-				map.put("bet", BigInteger.valueOf(rs.getLong("bet")).doubleValue()/Config.unit.doubleValue());
+				map.put("bet", BigInteger.valueOf(rs.getLong("bet")).doubleValue()/Config.nbc_unit.doubleValue());
 				map.put("bet_bs", rs.getShort("bet_bs"));
 				map.put("tx_hash", rs.getString("tx_hash"));
 				map.put("roll", rs.getDouble("roll"));
 				map.put("resolved", rs.getString("resolved"));
 				map.put("block_index", rs.getString("block_index"));
 				map.put("block_time", Util.timeFormat(rs.getInt("block_time")));
-				map.put("profit", BigInteger.valueOf(rs.getLong("profit")).doubleValue()/Config.unit.doubleValue());
+				map.put("profit", BigInteger.valueOf(rs.getLong("profit")).doubleValue()/Config.nbc_unit.doubleValue());
 				bets.add(map);
 			}
 		} catch (SQLException e) {
@@ -1099,14 +1051,14 @@ public Map<String, Object> handleCasinoRequest(Request request) {
 			while (rs.next()) {
 				HashMap<String,Object> map = new HashMap<String,Object>();
 				map.put("source", rs.getString("source"));
-				map.put("bet", BigInteger.valueOf(rs.getLong("bet")).doubleValue()/Config.unit.doubleValue());
+				map.put("bet", BigInteger.valueOf(rs.getLong("bet")).doubleValue()/Config.nbc_unit.doubleValue());
 				map.put("bet_bs", rs.getShort("bet_bs"));
 				map.put("tx_hash", rs.getString("tx_hash"));
 				map.put("roll", rs.getDouble("roll"));
 				map.put("resolved", rs.getString("resolved"));
 				map.put("block_index", rs.getString("block_index"));
 				map.put("block_time", Util.timeFormat(rs.getInt("block_time")));
-				map.put("profit", BigInteger.valueOf(rs.getLong("profit")).doubleValue()/Config.unit.doubleValue());
+				map.put("profit", BigInteger.valueOf(rs.getLong("profit")).doubleValue()/Config.nbc_unit.doubleValue());
 				bets.add(map);
 			}
 		} catch (SQLException e) {
@@ -1119,14 +1071,14 @@ public Map<String, Object> handleCasinoRequest(Request request) {
 			while (rs.next()) {
 				HashMap<String,Object> map = new HashMap<String,Object>();
 				map.put("source", rs.getString("source"));
-				map.put("bet", BigInteger.valueOf(rs.getLong("bet")).doubleValue()/Config.unit.doubleValue());
+				map.put("bet", BigInteger.valueOf(rs.getLong("bet")).doubleValue()/Config.nbc_unit.doubleValue());
 				map.put("bet_bs", rs.getShort("bet_bs"));
 				map.put("tx_hash", rs.getString("tx_hash"));
 				map.put("roll", rs.getDouble("roll"));
 				map.put("resolved", rs.getString("resolved"));	
 				map.put("block_index", rs.getString("block_index"));
 				map.put("block_time", Util.timeFormat(rs.getInt("block_time")));
-				map.put("profit", BigInteger.valueOf(rs.getLong("profit")).doubleValue()/Config.unit.doubleValue());
+				map.put("profit", BigInteger.valueOf(rs.getLong("profit")).doubleValue()/Config.nbc_unit.doubleValue());
 				bets.add(map);
 			}
 		} catch (SQLException e) {
@@ -1138,7 +1090,7 @@ public Map<String, Object> handleCasinoRequest(Request request) {
 		for (BetInfo betInfo : betsPending) {
 			HashMap<String,Object> map = new HashMap<String,Object>();
 			map.put("source", betInfo.source);
-			map.put("bet", betInfo.bet.doubleValue()/Config.unit.doubleValue());
+			map.put("bet", betInfo.bet.doubleValue()/Config.nbc_unit.doubleValue());
 			map.put("bet_bs", betInfo.bet_bs);
 			map.put("tx_hash", betInfo.txHash);
 			map.put("block_index", betInfo.blockIndex.toString());
@@ -1149,49 +1101,15 @@ public Map<String, Object> handleCasinoRequest(Request request) {
 
 		return attributes;
 	}
-	
+	/*
 	public Map<String, Object> handleWorldCupRequest(Request request) {
 		Map<String, Object> attributes = new HashMap<String, Object>();
 		request.session(true);
-		attributes = updateChatStatus(request, attributes);
+		attributes = updateCommonStatus(request, attributes);
 		attributes.put("title", "WorldCup");
 		
 		Blocks blocks = Blocks.getInstance();
-		attributes.put("supply", Util.nbcSupply().floatValue() / Config.unit.floatValue());
-		attributes.put("blocksBTC", blocks.bitcoinBlock);
-		attributes.put("blocksNBC", blocks.newbiecoinBlock);
-		attributes.put("version", Config.version);
-		attributes.put("min_version", Util.getMinVersion());
-		attributes.put("min_version_major", Util.getMinMajorVersion());
-		attributes.put("min_version_minor", Util.getMinMinorVersion());
-		attributes.put("version_major", Config.majorVersion);
-		attributes.put("version_minor", Config.minorVersion);
-		Blocks.getInstance().versionCheck();
-		if (Blocks.getInstance().parsing) attributes.put("parsing", Blocks.getInstance().parsingBlock);
-		
-		String address = Util.getAddresses().get(0);
-		if (request.session().attributes().contains("address")) {
-			address = request.session().attribute("address");
-		}
-		if (request.queryParams().contains("address")) {
-			address = request.queryParams("address");
-			request.session().attribute("address", address);
-		}
-		ArrayList<HashMap<String, Object>> addresses = new ArrayList<HashMap<String, Object>>();
-		for (String addr : Util.getAddresses()) {
-			HashMap<String,Object> map = new HashMap<String,Object>();	
-			map.put("address", addr);
-			map.put("balance_NBC", Util.getBalance(addr, "NBC").floatValue() / Config.unit.floatValue());
-			addresses.add(map);
-		}
-		attributes.put("address", address);				
-		attributes.put("addresses", addresses);
-		for (ECKey key : blocks.wallet.getKeys()) {
-			if (key.toAddress(blocks.params).toString().equals(address)) {
-				attributes.put("own", true);
-			}
-		}
-		
+		String address=(String)attributes.get("address");
 		if (request.queryParams().contains("form") && request.queryParams("form").equals("bet")) {
 			String source = request.queryParams("source");
 			
@@ -1201,11 +1119,11 @@ public Map<String, Object> handleCasinoRequest(Request request) {
 					Double rawBet = Double.parseDouble(betStr);
 					Short championTeamId = Short.parseShort(request.queryParams("champion"));
 					Short secondTeamId = Short.parseShort(request.queryParams("second"));
-					BigInteger bet = new BigDecimal(rawBet*Config.unit).toBigInteger();
+					BigInteger bet = new BigDecimal(rawBet*Config.nbc_unit).toBigInteger();
 				
 					Transaction tx = BetWorldCup.create(source,  bet, championTeamId,secondTeamId);
 					blocks.sendTransaction(source,tx);
-					attributes.put("success", "Thank you for betting! Your request had been submited.Please wait confirms for about 6 blocks.");
+					attributes.put("success", "Thank you for betting! Your request had been submited.Please wait confirms for at least 1 block.");
 				} catch (Exception e) {
 					attributes.put("error", e.getMessage());
 				}
@@ -1220,7 +1138,7 @@ public Map<String, Object> handleCasinoRequest(Request request) {
 			
 				Transaction tx = BetWorldCup.createResolvedBroadcast(championTeamId,secondTeamId);
 				blocks.sendTransaction(address,tx);
-				attributes.put("success", "The broadcast had been submited.Please wait confirms for about 6 blocks.");
+				attributes.put("success", "The broadcast had been submited.Please wait confirms for at least 1 block.");
 			} catch (Exception e) {
 				attributes.put("error", e.getMessage());
 			}
@@ -1292,7 +1210,7 @@ public Map<String, Object> handleCasinoRequest(Request request) {
 			if(rs.next()){
 				BigInteger totalHouseFee=BigInteger.valueOf(rs.getLong("sum_fee"));
 				attributes.put("house_times", rs.getInt("fee_count"));
-				attributes.put("total_house_fee", totalHouseFee.floatValue() / Config.unit.floatValue());
+				attributes.put("total_house_fee", totalHouseFee.floatValue() / Config.nbc_unit.floatValue());
 			}else{
 				attributes.put("house_times", 0);
 				attributes.put("total_house_fee", 0);
@@ -1312,13 +1230,13 @@ public Map<String, Object> handleCasinoRequest(Request request) {
 				HashMap<String,Object> map = new HashMap<String,Object>();
 				map.put("bet_set", BetWorldCup.getBetSetLabel(rs.getShort("bet_set")));
 				map.put("bet_count", rs.getDouble("bet_count"));
-				map.put("sum_bet", BigInteger.valueOf(rs.getLong("sum_bet")).doubleValue()/Config.unit.doubleValue());
-				map.put("avg_bet", BigInteger.valueOf(rs.getLong("avg_bet")).doubleValue()/Config.unit.doubleValue());
+				map.put("sum_bet", BigInteger.valueOf(rs.getLong("sum_bet")).doubleValue()/Config.nbc_unit.doubleValue());
+				map.put("avg_bet", BigInteger.valueOf(rs.getLong("avg_bet")).doubleValue()/Config.nbc_unit.doubleValue());
 				BigInteger sum_profit= BigInteger.valueOf(rs.getLong("sum_profit"));
 				if(sum_profit.compareTo(BigInteger.ZERO)==0)
 					map.put("sum_profit", "(Pending)");
 				else
-					map.put("sum_profit", sum_profit.doubleValue()/Config.unit.doubleValue());
+					map.put("sum_profit", sum_profit.doubleValue()/Config.nbc_unit.doubleValue());
 					
 				teams.add(map);
 			}
@@ -1334,11 +1252,11 @@ public Map<String, Object> handleCasinoRequest(Request request) {
 				HashMap<String,Object> map = new HashMap<String,Object>();
 				map.put("source", rs.getString("source"));
 				map.put("bet_count", rs.getDouble("bet_count"));
-				map.put("avg_bet", BigInteger.valueOf(rs.getLong("avg_bet")).doubleValue()/Config.unit.doubleValue());
+				map.put("avg_bet", BigInteger.valueOf(rs.getLong("avg_bet")).doubleValue()/Config.nbc_unit.doubleValue());
 				//map.put("avg_newbie", rs.getDouble("avg_newbie"));
 				BigInteger sum_profit=BigInteger.valueOf(rs.getLong("sum_profit"));
 				if(sum_profit.compareTo(BigInteger.ZERO)>0)
-					map.put("sum_profit", BigInteger.valueOf(rs.getLong("sum_profit")).doubleValue()/Config.unit.doubleValue());
+					map.put("sum_profit", BigInteger.valueOf(rs.getLong("sum_profit")).doubleValue()/Config.nbc_unit.doubleValue());
 				else
 					break;
 					
@@ -1356,9 +1274,9 @@ public Map<String, Object> handleCasinoRequest(Request request) {
 				HashMap<String,Object> map = new HashMap<String,Object>();
 				map.put("source", rs.getString("source"));
 				map.put("bet_count", rs.getDouble("bet_count"));
-				map.put("sum_bet", BigInteger.valueOf(rs.getLong("sum_bet")).doubleValue()/Config.unit.doubleValue());
+				map.put("sum_bet", BigInteger.valueOf(rs.getLong("sum_bet")).doubleValue()/Config.nbc_unit.doubleValue());
 				//map.put("avg_newbie", rs.getDouble("avg_newbie"));
-				map.put("sum_profit", BigInteger.valueOf(rs.getLong("sum_profit")).doubleValue()/Config.unit.doubleValue());
+				map.put("sum_profit", BigInteger.valueOf(rs.getLong("sum_profit")).doubleValue()/Config.nbc_unit.doubleValue());
 				highRollers.add(map);
 			}
 		} catch (SQLException e) {
@@ -1372,13 +1290,13 @@ public Map<String, Object> handleCasinoRequest(Request request) {
 			while (rs.next()) {
 				HashMap<String,Object> map = new HashMap<String,Object>();
 				map.put("source", rs.getString("source"));
-				map.put("bet", BigInteger.valueOf(rs.getLong("bet")).doubleValue()/Config.unit.doubleValue());
+				map.put("bet", BigInteger.valueOf(rs.getLong("bet")).doubleValue()/Config.nbc_unit.doubleValue());
 				map.put("bet_set", BetWorldCup.getBetSetLabel(rs.getShort("bet_set")));
 				map.put("tx_hash", rs.getString("tx_hash"));
 				map.put("resolved", rs.getString("resolved"));
 				map.put("block_index", rs.getString("block_index"));
 				map.put("block_time", Util.timeFormat(rs.getInt("block_time")));
-				map.put("profit", BigInteger.valueOf(rs.getLong("profit")).doubleValue()/Config.unit.doubleValue());
+				map.put("profit", BigInteger.valueOf(rs.getLong("profit")).doubleValue()/Config.nbc_unit.doubleValue());
 				bets_worldcup.add(map);
 			}
 		} catch (SQLException e) {
@@ -1393,13 +1311,13 @@ public Map<String, Object> handleCasinoRequest(Request request) {
 			while (rs.next()) {
 				HashMap<String,Object> map = new HashMap<String,Object>();
 				map.put("source", rs.getString("source"));
-				map.put("bet", BigInteger.valueOf(rs.getLong("bet")).doubleValue()/Config.unit.doubleValue());
+				map.put("bet", BigInteger.valueOf(rs.getLong("bet")).doubleValue()/Config.nbc_unit.doubleValue());
 				map.put("bet_set", BetWorldCup.getBetSetLabel(rs.getShort("bet_set")));
 				map.put("tx_hash", rs.getString("tx_hash"));
 				map.put("resolved", rs.getString("resolved"));
 				map.put("block_index", rs.getString("block_index"));
 				map.put("block_time", Util.timeFormat(rs.getInt("block_time")));
-				map.put("profit", BigInteger.valueOf(rs.getLong("profit")).doubleValue()/Config.unit.doubleValue());
+				map.put("profit", BigInteger.valueOf(rs.getLong("profit")).doubleValue()/Config.nbc_unit.doubleValue());
 				bets_worldcup.add(map);
 			}
 		} catch (SQLException e) {
@@ -1412,13 +1330,13 @@ public Map<String, Object> handleCasinoRequest(Request request) {
 			while (rs.next()) {
 				HashMap<String,Object> map = new HashMap<String,Object>();
 				map.put("source", rs.getString("source"));
-				map.put("bet", BigInteger.valueOf(rs.getLong("bet")).doubleValue()/Config.unit.doubleValue());
+				map.put("bet", BigInteger.valueOf(rs.getLong("bet")).doubleValue()/Config.nbc_unit.doubleValue());
 				map.put("bet_set", BetWorldCup.getBetSetLabel(rs.getShort("bet_set")));
 				map.put("tx_hash", rs.getString("tx_hash"));
 				map.put("resolved", rs.getString("resolved"));	
 				map.put("block_index", rs.getString("block_index"));
 				map.put("block_time", Util.timeFormat(rs.getInt("block_time")));
-				map.put("profit", BigInteger.valueOf(rs.getLong("profit")).doubleValue()/Config.unit.doubleValue());
+				map.put("profit", BigInteger.valueOf(rs.getLong("profit")).doubleValue()/Config.nbc_unit.doubleValue());
 				bets_worldcup.add(map);
 			}
 		} catch (SQLException e) {
@@ -1430,7 +1348,7 @@ public Map<String, Object> handleCasinoRequest(Request request) {
 		for (BetWorldCupInfo betInfo : betsPending) {
 			HashMap<String,Object> map = new HashMap<String,Object>();
 			map.put("source", betInfo.source);
-			map.put("bet", betInfo.bet.doubleValue()/Config.unit.doubleValue());
+			map.put("bet", betInfo.bet.doubleValue()/Config.nbc_unit.doubleValue());
 			map.put("bet_set",BetWorldCup.getBetSetLabel( betInfo.bet_set));
 			map.put("tx_hash", betInfo.txHash);
 			map.put("block_index", betInfo.blockIndex.toString());
@@ -1439,6 +1357,445 @@ public Map<String, Object> handleCasinoRequest(Request request) {
 		}
 		attributes.put("my_bets_pending", bets_worldcup);
 
+		return attributes;
+	}
+	*/
+	public Map<String, Object> handleCrowdfundingRequest(Request request) {
+		Map<String, Object> attributes = new HashMap<String, Object>();
+		request.session(true);
+		attributes = updateCommonStatus(request, attributes);
+		attributes.put("title", "Crowdfunding");
+		
+		Blocks blocks = Blocks.getInstance();
+		String address=(String)attributes.get("address");
+		
+		if (request.queryParams().contains("form") && request.queryParams("form").equals("add-project")) {
+			logger.info("************* do add-project **************");
+		
+			String owner = request.queryParams("owner");
+			
+			String titleStr=request.queryParams("title");
+			String expireDateStr=request.queryParams("expire_date");
+			String logoImgUrlStr=request.queryParams("logo_img_url");
+			String topicImgUrlStr=request.queryParams("topic_img_url");
+			String detailImgUrlStr=request.queryParams("detail_img_url");
+			String emailStr=request.queryParams("email");
+			String nameStr=request.queryParams("name");
+			String detailUrlStr=request.queryParams("web");
+			String minFundStr=request.queryParams("min_fund");
+			String rsaPublicKeyStr=request.queryParams("rsa_public_key");
+
+			if(titleStr.length()>0 && expireDateStr.length()>0 && logoImgUrlStr.length()>0 && topicImgUrlStr.length()>0 && detailImgUrlStr.length()>0 && nameStr.length()>0 && emailStr.length()>0 && detailUrlStr.length()>0 && minFundStr.length()>0 && rsaPublicKeyStr.length()>0){
+				try {
+					Double rawMinNewbAmount = Double.parseDouble(minFundStr);
+					BigInteger minNewbAmount = new BigDecimal(rawMinNewbAmount*Config.nbc_unit).toBigInteger();
+					
+					JSONArray itemSets = new JSONArray(); 
+					for(int tt=1;tt<=5;tt++){
+						String tmpPriceStr = request.queryParams("item"+tt+"_price");
+						String tmpMaxStr   = request.queryParams("item"+tt+"_max_backers");
+						String tmpLabelStr = request.queryParams("item"+tt+"_label");
+						
+						if(tmpPriceStr.length()>0 ){
+							Double rawItemNewbAmount = Double.parseDouble(tmpPriceStr);
+							BigInteger itemNewbAmount = new BigDecimal(rawItemNewbAmount*Config.nbc_unit).toBigInteger();
+							
+							Integer itemBackerLimit = Integer.parseInt(tmpMaxStr);
+							
+							JSONObject itemData = new JSONObject(); 
+							itemData.put("price",itemNewbAmount); 
+							itemData.put("max",itemBackerLimit); 
+							itemData.put("label",tmpLabelStr); 
+							
+							itemSets.put(itemData);
+						}
+					}
+					
+					Integer expireUTC=Util.getDateTimestamp(expireDateStr,null);
+					Calendar nowtime=Calendar.getInstance();
+					Long leftSeconds=expireUTC-nowtime.getTimeInMillis()/1000L;
+
+					if(leftSeconds<60*60*24L || leftSeconds>60*60*24*365L  ){
+						attributes.put("error", "Please input a valid expire date ( At least 1 day and at most 1 year from today).");
+					} else if( itemSets.length()==0 ){
+						attributes.put("error", "Please set at least one valid item for backing.");
+					} else {
+						Map mapProjectSet = new HashMap(); 
+						mapProjectSet.put("title", titleStr); 
+						mapProjectSet.put("logo_img_url", logoImgUrlStr); 
+						mapProjectSet.put("topic_img_url", topicImgUrlStr); 
+						mapProjectSet.put("detail_img_url", detailImgUrlStr); 
+						mapProjectSet.put("name", nameStr); 
+						mapProjectSet.put("email", emailStr); 
+						mapProjectSet.put("web", detailUrlStr); 
+						mapProjectSet.put("min_fund", minNewbAmount); 
+						mapProjectSet.put("expire_utc", expireUTC); 
+						mapProjectSet.put("item_sets", itemSets); 
+						mapProjectSet.put("rsa_pub", rsaPublicKeyStr); 
+						 
+						JSONObject project_set = new JSONObject(mapProjectSet); 
+						
+						Transaction tx = CrowdfundingProject.createProject(owner,  project_set);
+						blocks.sendTransaction(owner,tx);
+						attributes.put("success", "Thank you for creating a project! Your request had been submited.Please wait confirms for at least 1 block.");
+					}
+				} catch (Exception e) {
+					logger.error("************* do add-project error: "+e.getMessage());
+					attributes.put("error", e.getMessage());
+				}
+			} else {
+				attributes.put("error", "Please input valid title, expire date,min fund amount, logo/topic/detail img url,website url, your name and email.");
+			}
+		}
+		
+		Database db = Database.getInstance();
+		
+		ArrayList<HashMap<String, Object>> crowdfunding_projects = new ArrayList<HashMap<String, Object>>();
+		
+		List<CrowdfundingProjectInfo> projectsPending = CrowdfundingProject.getPending(address);
+		logger.info( "\n=============================\n projectsPending.size="+projectsPending.size()+"\n=====================\n");
+		
+		crowdfunding_projects = new ArrayList<HashMap<String, Object>>();
+		for (CrowdfundingProjectInfo projectInfo : projectsPending) {
+			HashMap<String,Object> map = new HashMap<String,Object>();
+			map.put("owner", projectInfo.owner);
+			map.put("tx_index",projectInfo.txIndex.toString());
+			map.put("tx_hash", projectInfo.txHash);
+			map.put("block_index", projectInfo.blockIndex.toString());
+			map.put("block_time", Util.timeFormat(projectInfo.blockTime));
+			map.put("backers",projectInfo.backers);
+			map.put("nbc_funded",projectInfo.nbcFunded);
+			map.put("validity",projectInfo.validity);
+			map.put("percent", 0); 
+			
+			try{
+				map=CrowdfundingProject.parseProjectSet(map,projectInfo.projectSet);
+				crowdfunding_projects.add(map);
+			}catch (Exception e) {
+				logger.error(e.toString());
+			}
+		}
+		attributes.put("my_pending_projects", crowdfunding_projects);
+		
+		//get last 10 projects
+		ResultSet rs = db.executeQuery("select cp.owner ,cp.tx_hash ,cp.tx_index ,cp.block_index,transactions.block_time,cp.project_set, cp.backers, cp.nbc_funded,cp.validity from crowdfunding_projects cp,transactions where cp.tx_index=transactions.tx_index order by cp.block_index desc, cp.tx_index desc limit 10;");
+		crowdfunding_projects = new ArrayList<HashMap<String, Object>>();
+		try {
+			while ( rs.next()) {
+				HashMap<String,Object> map = new HashMap<String,Object>();
+				map.put("owner", rs.getString("owner"));
+				map.put("tx_index", rs.getString("tx_index"));
+				map.put("tx_hash", rs.getString("tx_hash"));
+				map.put("validity", rs.getString("validity"));
+				map.put("block_index", rs.getString("block_index"));
+				map.put("block_time", Util.timeFormat(rs.getInt("block_time")));
+				map.put("backers", rs.getInt("backers"));
+				map.put("nbc_funded", BigInteger.valueOf(rs.getLong("nbc_funded")).doubleValue()/Config.nbc_unit.doubleValue());
+				
+				try{
+					JSONObject project_set = new JSONObject(rs.getString("project_set")); 
+					map=CrowdfundingProject.parseProjectSet(map,project_set);
+					
+					map.put("percent", new BigDecimal(100*BigInteger.valueOf(rs.getLong("nbc_funded")).doubleValue()/BigInteger.valueOf(project_set.getLong("min_fund")).doubleValue()).toBigInteger( )); 
+					
+					crowdfunding_projects.add(map);
+				}catch (Exception e) {
+					logger.error(e.toString());
+				}
+			}
+		} catch (SQLException e) {
+		}
+		
+		if( !crowdfunding_projects.isEmpty() ){
+			attributes.put("recent_projects", crowdfunding_projects);
+			attributes.put("recommand_project", crowdfunding_projects.get(0));
+		}
+		
+		//get my projects
+		rs = db.executeQuery("select cp.owner ,cp.tx_hash ,cp.tx_index ,cp.block_index,transactions.block_time,cp.project_set, cp.backers, cp.nbc_funded,cp.validity from crowdfunding_projects cp,transactions where cp.owner='"+address+"' and cp.tx_index=transactions.tx_index order by cp.block_index desc, cp.tx_index desc limit 100;");
+		crowdfunding_projects = new ArrayList<HashMap<String, Object>>();
+		try {
+			while ( rs.next()) {
+				HashMap<String,Object> map = new HashMap<String,Object>();
+				map.put("owner", rs.getString("owner"));
+				map.put("tx_index", rs.getString("tx_index"));
+				map.put("tx_hash", rs.getString("tx_hash"));
+				map.put("validity", rs.getString("validity"));
+				map.put("block_index", rs.getString("block_index"));
+				map.put("block_time", Util.timeFormat(rs.getInt("block_time")));
+				map.put("backers", rs.getInt("backers"));
+				map.put("nbc_funded", BigInteger.valueOf(rs.getLong("nbc_funded")).doubleValue()/Config.nbc_unit.doubleValue());
+				
+				try{
+					JSONObject project_set = new JSONObject(rs.getString("project_set")); 
+					map=CrowdfundingProject.parseProjectSet(map,project_set);
+					
+					map.put("percent", new BigDecimal(100*BigInteger.valueOf(rs.getLong("nbc_funded")).doubleValue()/BigInteger.valueOf(project_set.getLong("min_fund")).doubleValue()).toBigInteger( )); 
+					
+					crowdfunding_projects.add(map);
+				}catch (Exception e) {
+					logger.error(e.toString());
+				}
+			}
+		} catch (SQLException e) {
+		}
+		
+		attributes.put("my_projects", crowdfunding_projects);
+		
+		//get my backs
+		rs = db.executeQuery("select bk.backer,bk.email,bk.tx_hash ,bk.tx_index ,bk.back_price_nbc,bk.validity ,bk.block_index,bk.project_tx_index,transactions.block_time,cp.owner ,cp.project_set, cp.backers, cp.nbc_funded,cp.validity as project_validity from crowdfunding_backers bk,crowdfunding_projects cp,transactions where bk.backer='"+address+"' and bk.project_tx_index=cp.tx_index and bk.tx_index=transactions.tx_index order by bk.block_index desc, bk.tx_index desc limit 100;");
+		crowdfunding_projects = new ArrayList<HashMap<String, Object>>();
+		try {
+			while ( rs.next()) {
+				HashMap<String,Object> map = new HashMap<String,Object>();
+				
+				Long back_item_price_nbc=rs.getLong("back_price_nbc");
+				map.put("backer", rs.getString("backer"));
+				map.put("email", rs.getString("email"));
+				map.put("tx_index", rs.getString("tx_index"));
+				map.put("tx_hash", rs.getString("tx_hash"));
+				map.put("item_price", back_item_price_nbc);
+				map.put("validity", rs.getString("validity"));
+				map.put("block_index", rs.getString("block_index"));
+				map.put("block_time", Util.timeFormat(rs.getInt("block_time")));
+				map.put("project_tx_index", rs.getString("project_tx_index"));
+				map.put("project_validity", rs.getString("project_validity"));
+				//map.put("owner", rs.getString("owner"));
+				//map.put("backers", rs.getInt("backers"));
+				//map.put("nbc_funded", BigInteger.valueOf(rs.getLong("nbc_funded")).doubleValue()/Config.nbc_unit.doubleValue());
+				
+				String originalEmailStr=Util.getOriginalBackContact(rs.getString("tx_hash"));
+				if(originalEmailStr!=null)
+					map.put("email", originalEmailStr);
+					
+				try{
+					JSONObject project_set = new JSONObject(rs.getString("project_set")); 
+					map.put("logo_img_url", HtmlRegexpUtil.filterHtml(project_set.getString("logo_img_url")));
+					//map=CrowdfundingProject.parseProjectSet(map,project_set);
+					
+					//map.put("percent", new BigDecimal(100*BigInteger.valueOf(rs.getLong("nbc_funded")).doubleValue()/BigInteger.valueOf(project_set.getLong("min_fund")).doubleValue()).toBigInteger( )); 
+					
+					JSONArray  item_sets = project_set.getJSONArray("item_sets");
+					ArrayList<HashMap<String, Object>> item_set_array = new ArrayList<HashMap<String, Object>>();
+					for(int tt=0;tt<item_sets.length();tt++){
+						JSONObject item_obj=(JSONObject)item_sets.get(tt);
+						
+						if(item_obj.getLong("price")==back_item_price_nbc){
+							map.put("item_label", HtmlRegexpUtil.filterHtml(item_obj.getString("label")));
+							break;
+						}
+					}
+					
+					crowdfunding_projects.add(map);
+				}catch (Exception e) {
+					logger.error(e.toString());
+				}
+			}
+		} catch (SQLException e) {
+		}
+		
+		attributes.put("my_backs", crowdfunding_projects);
+		
+		return attributes;
+	}
+
+	public Map<String, Object> handleCrowdfundingDetailRequest(Request request) {
+		Map<String, Object> attributes = new HashMap<String, Object>();
+		request.session(true);
+		
+		attributes = updateCommonStatus(request, attributes);
+		attributes.put("title", "View crowdfunding details");
+		
+		String project_tx_index_param=request.queryParams("project_tx_index");
+		if(project_tx_index_param==null){
+			if (request.session().attributes().contains("project_tx_index")) {
+				project_tx_index_param=request.session().attribute("project_tx_index"); 
+			} else {
+				attributes.put("error", "Invalid project.");
+				return attributes;
+			}
+		} 
+		
+		Integer project_tx_index=Integer.parseInt(project_tx_index_param); 
+		logger.info("handleCrowdfundingDetailRequest() project_tx_index="+project_tx_index);
+		request.session().attribute("project_tx_index", project_tx_index_param);
+		
+		CrowdfundingProject.updateProjectStat(project_tx_index.toString());
+		CrowdfundingProjectInfo projectInfo=CrowdfundingProject.getProjectInfo(project_tx_index.toString());
+		
+		if(projectInfo==null){
+			attributes.put("error", "Invalid project.");
+		} else {	
+			Blocks blocks = Blocks.getInstance();
+			String address=(String)attributes.get("address");
+			
+			if (request.queryParams().contains("form") && request.queryParams("form").equals("back")) {
+				String backer = request.queryParams("backer");
+				String backPriceStr=request.queryParams("back_price");
+				String originalEmailStr=request.queryParams("backer_email");
+		
+				logger.info("backPriceStr="+backPriceStr+" emailStr="+originalEmailStr);
+				
+				if ( backPriceStr.length()>0 && originalEmailStr.length()>5 ){
+					try {
+						Double rawBackPrice = Double.parseDouble(backPriceStr);
+						BigInteger backPrice = new BigDecimal(rawBackPrice*Config.nbc_unit).toBigInteger();
+						
+						JSONObject project_set = projectInfo.projectSet; 
+						String encodedEmailStr=originalEmailStr;
+						if(project_set.has("rsa_pub")) {
+							String rsa_pub_key=project_set.getString("rsa_pub");
+							encodedEmailStr=Coder.encryptBASE64(
+								RSACoder.encryptByPublicKey(originalEmailStr.getBytes(), rsa_pub_key)
+								);
+						} 
+						
+						Transaction tx = CrowdfundingBack.backProject(backer, projectInfo.txHash, backPrice,encodedEmailStr);
+						blocks.sendTransaction(backer,tx);
+						Util.exportOriginalBackContact(tx.getHashAsString(),originalEmailStr);
+						attributes.put("success", "Thank you for backing the project! Your request had been submited.Please wait confirms for at least 1 block.");
+					} catch (Exception e) {
+						attributes.put("error", e.getMessage());
+					}
+				} else {
+					attributes.put("error", "Please select which to be backed and input your valid email address.");
+				}
+			}
+
+			HashMap<String,Object> map = new HashMap<String,Object>();
+			map.put("owner", projectInfo.owner);
+			map.put("tx_index", projectInfo.txIndex.toString());
+			map.put("tx_hash", projectInfo.txHash);
+			map.put("validity", projectInfo.validity);
+			map.put("block_index",projectInfo.blockIndex);
+			map.put("block_time", Util.timeFormat(projectInfo.blockTime));
+			map.put("backers", projectInfo.backers);
+			map.put("nbc_funded", BigInteger.valueOf(projectInfo.nbcFunded).doubleValue()/Config.nbc_unit.doubleValue());
+			
+			try{
+				JSONObject project_set = projectInfo.projectSet; 
+				map=CrowdfundingProject.parseProjectSet(map,project_set);
+				 
+				map.put("percent", new BigDecimal(100*BigInteger.valueOf( projectInfo.nbcFunded ).doubleValue()/BigInteger.valueOf(project_set.getLong("min_fund")).doubleValue()).toBigInteger( )); 
+				
+				attributes.put("project", map);		
+				
+				JSONObject back_stat = projectInfo.backStat; 
+				JSONObject myBackedItems = 
+				      CrowdfundingProject.getProjectMyBackedItems(project_tx_index.toString(),address); 
+				JSONArray  item_sets = project_set.getJSONArray("item_sets");
+				
+				List<CrowdfundingBackerInfo> myPendingBacks=CrowdfundingBack.getPending(address);
+				
+				ArrayList<HashMap<String, Object>> item_set_array = new ArrayList<HashMap<String, Object>>();
+				for(int tt=0;tt<item_sets.length();tt++){
+					JSONObject item_obj=(JSONObject)item_sets.get(tt);
+					HashMap<String,Object> item = new HashMap<String,Object>();
+					item.put("price", BigInteger.valueOf(item_obj.getLong("price")).doubleValue()/Config.nbc_unit.doubleValue());	
+					item.put("max", item_obj.getInt("max"));	
+					item.put("label", HtmlRegexpUtil.filterHtml(item_obj.getString("label")).replaceAll("[\\n]", "<br>"));	
+					
+					for(int bb=0;bb<myPendingBacks.size();bb++){
+						CrowdfundingBackerInfo  tmpBackerInfo=myPendingBacks.get(bb);
+						if(tmpBackerInfo.projectTxHash.equals(projectInfo.txHash) && tmpBackerInfo.price==item_obj.getLong("price")){
+							item.put("back_is_pending",true);
+						}
+					}
+					
+					Integer item_backers=0;
+					if(back_stat!=null && back_stat.has(""+item_obj.getLong("price")))
+						item_backers=back_stat.getJSONObject(""+item_obj.getLong("price")).getInt("backers");
+					
+					if(item.get("back_is_pending")!=null)
+						item_backers++;
+						
+					item.put("backers",item_backers);
+					
+					Integer leftChance=item_obj.getInt("max")-item_backers;
+					if(leftChance<=0)
+						item.put("left", 0);
+					else
+						item.put("left", leftChance);
+					
+					if(item_backers>0 && myBackedItems!=null && myBackedItems.has(""+item_obj.getLong("price"))){
+						item.put("had_backed",true);
+					}
+					
+					item_set_array.add(item);
+				}
+				
+				attributes.put("items", item_set_array);		
+			}catch (Exception e) {
+				logger.error(e.toString());
+			}
+			
+			if(attributes.containsKey("own") && address.equals(projectInfo.owner)){
+				String rsa_prv_key=null;
+				try{
+					JSONObject rsaKeyMap=Util.getRSAKeys(projectInfo.owner,false);
+					if(rsaKeyMap!=null)
+						rsa_prv_key=RSACoder.getPrivateKey(rsaKeyMap);
+				}catch(Exception e){
+					logger.error(e.toString());
+				}
+				
+				//View recent backers for the project owner
+				Database db = Database.getInstance();
+				ResultSet rs = db.executeQuery("select bk.backer,bk.email,bk.tx_hash ,bk.tx_index ,bk.back_price_nbc,bk.validity ,bk.block_index,bk.project_tx_index,transactions.block_time from crowdfunding_backers bk,transactions where bk.project_tx_index="+projectInfo.txIndex+" and bk.tx_index=transactions.tx_index order by bk.block_index desc, bk.tx_index limit 100;");
+				ArrayList<HashMap<String, Object>> project_backs = new ArrayList<HashMap<String, Object>>();
+				try {
+					while ( rs.next()) {
+						map = new HashMap<String,Object>();
+						
+						Long back_item_price_nbc=rs.getLong("back_price_nbc");
+						map.put("backer", rs.getString("backer"));
+						map.put("tx_index", rs.getString("tx_index"));
+						map.put("tx_hash", rs.getString("tx_hash"));
+						map.put("item_price", back_item_price_nbc);
+						map.put("validity", rs.getString("validity"));
+						map.put("block_index", rs.getString("block_index"));
+						map.put("block_time", Util.timeFormat(rs.getInt("block_time")));
+
+						try{
+							JSONObject project_set = projectInfo.projectSet; 
+							
+							String emailStr=rs.getString("email");
+							if(project_set.has("rsa_pub") && rsa_prv_key!=null) {
+								try{
+									emailStr=new String(
+										RSACoder.decryptByPrivateKey(Coder.decryptBASE64(emailStr), rsa_prv_key)
+										);
+								}catch(Exception e){
+									logger.error("Failed to decrypt back contact:"+e.toString());
+									emailStr="(encypted contact)";
+								}
+							} 
+							map.put("email", emailStr);
+							
+							JSONArray  item_sets = project_set.getJSONArray("item_sets");
+							ArrayList<HashMap<String, Object>> item_set_array = new ArrayList<HashMap<String, Object>>();
+							for(int tt=0;tt<item_sets.length();tt++){
+								JSONObject item_obj=(JSONObject)item_sets.get(tt);
+								
+								if(item_obj.getLong("price")==back_item_price_nbc){
+									map.put("item_label", HtmlRegexpUtil.filterHtml(item_obj.getString("label")));
+									break;
+								}
+							}
+							
+							project_backs.add(map);
+						}catch (Exception e) {
+							logger.error(e.toString());
+						}
+					}
+				} catch (SQLException e) {
+				}
+				
+				attributes.put("project_backs", project_backs);
+			}
+			
+		}					
+		
 		return attributes;
 	}
 }

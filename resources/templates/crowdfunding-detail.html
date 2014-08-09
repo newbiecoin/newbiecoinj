@@ -1,0 +1,181 @@
+<#import "template.html" as template>
+<@template.content>
+	<div class="row section">
+		<h2 align="center">${project["title"]}</h2>
+		<div class="row section">
+			<table class="table table-striped">
+			<tbody>
+			<tr>
+			<td width="660"><img src='${project["topic_img_url"]}' width="640" height="360" ></td>
+			<td width="330">
+				<table width="100%"  border="0" class="table" >
+				<tbody>
+				<tr>
+					<#if project["validity"]="valid">
+						<#if project["left_time_desc"]??>
+							<td colspan="2">Left ${project["left_time_desc"]} </td>
+							<td align="right">
+							
+							</td>
+						<#else>
+							<td colspan="2"> project expired and pending resolved. </td>
+							<td align="right">
+							
+							</td>
+						</#if>
+					<#elseif project["validity"]="success">
+					<td colspan="2">Successfully funded.</td>
+					<td align="right">
+					
+					</td>
+					<#elseif project["validity"]="failed">
+					<td colspan="2">Failed!</td>
+					<td align="right">
+					
+					</td>
+					<#elseif project["validity"]="canceled">
+					<td colspan="2">Canceled!</td>
+					<td align="right">
+					
+					</td>
+					<#else>
+					<td colspan="2">Invalid!</td>
+					<td align="right">
+					
+					</td>
+					</#if>
+				</tr>
+				<tr>
+					<td colspan="3">
+					Total ${project["nbc_funded"]} NEWB  ( ${project["percent"]}% of ${project["min_fund"]} NEWB)
+					</td>
+				</tr>
+				<tr>
+					<td></td>
+					<td></td>
+					<td><#if project_backs?? ><a href='#recent_backers'>${project["backers"]} backers</a><#else>${project["backers"]} backers</#if></td>
+				</tr>
+				</tbody>
+				</table>
+				<p>Project by: <a href='/wallet?address=${project["owner"]}'>${project["name"]}</a>
+				<#if own?? && address==project["owner"] ><!--<br><a class="btn btn-primary" role="button" href='/crowdfunding-back-list?project_tx_index=${project["tx_index"]}'>View all backs</a>  <a class="btn btn-primary btn-danger" role="button" href='/crowdfunding-cancel?project_tx_index=${project["tx_index"]}'>Cancel it!</a>--></#if></p>
+				<p>Email: ${project["email"]}</p>
+				<p>Website: ${project["web"]}</p>
+				<p>Created time: <a href='https://blockchain.info/block-index/${project["block_index"]}/'>${project["block_time"]}</a></p>
+			</td>
+			</tr>
+			</tbody>
+			</table>
+		</div>
+		
+		<table class="table table-striped">
+			<tbody>
+			<tr>
+			<td width="660">
+				<div class="row section padding-top">
+				<ul id="tabs" class="nav nav-tabs" data-tabs="tabs">
+					<li class="active"><a href="#project_detail" data-toggle="tab">Introduction</a></li>
+					<#if project_backs?? ><li><a href="#recent_backers" data-toggle="tab">Recent backers</a></li></#if>
+				</ul>
+
+				<div id="my-tab-content" class="tab-content">
+					<div class="tab-pane active" id="project_detail">
+					<img src='${project["detail_img_url"]}' width='640'  >
+					</div>
+	
+					<#if project_backs?? >
+					<div class="tab-pane" id="recent_backers">
+					<table class="table table-striped">
+						<thead>
+							<tr>
+								<th>Block</th>
+								<th>Time</th>
+								<th>Backed Item</th>
+								<th>Backer</th>
+								<th>Status</th>
+							</tr>
+						</thead>
+
+						<tbody>
+							<#list project_backs as back>
+								<tr>
+									<td><a  href='https://blockchain.info/block-index/${back["block_index"]}/'>${back["block_index"]}</a></td>
+									<td>${back["block_time"]}</td>
+									<td>Pledge ${back["item_price"]} NEWB</strong></td>
+									<td>${back["email"]}<br>(<a href='/wallet?address=${back["backer"]}'>${back["backer"]}</a>)</td>
+									<td>
+										<#if back["validity"]=="valid">
+											<#if project["validity"]=="valid">
+												valid
+											<#elseif project["validity"]=="success">
+												success
+											<#elseif project["validity"]=="failed">
+												refunded<br>(project failed)
+											<#else>
+												refunded<br>(project canceled)
+											</#if>
+										<#else>
+											${back["validity"]}
+										</#if>
+									</td>
+								</tr>
+							</#list>
+						</tbody>
+					</table>
+					</div>
+					</#if>	
+				</div>
+			</td>
+			<td width="330">
+				<hr size="1">
+				<#list items as item>
+					<p><strong>Pledge ${item["price"]} NEWB</strong></p>
+					<p>${item["backers"]} backers<br>Limited(${item["left"]} left of ${item["max"]})</p>
+					<p>${item["label"]}</p>
+					<p align="center">
+					<#if item["back_is_pending"]??>Your back is pending
+					<#elseif item["had_backed"]??>You backed it
+					<#elseif item["left"]<=0>
+					filled
+					<#elseif own?? && project["validity"]="valid" && project["left_time_desc"]?? >
+						<button class="btn btn-success" type="submit"  onclick="document.getElementById('back_price').value='${item["price"]?string("##0")}';$('#myModal').modal({'backdrop':false,'keyboard':true,'show':true});" >Back it!</button>
+					</#if>
+					</p>
+					<hr size="1">
+				</#list>
+			</form>
+			</td>
+			</tr>
+		</table>
+	</div>
+	
+<div class="modal" id="myModal" role="dialog">
+	<div class="modal-dialog">
+	<div class="modal-content">
+	<form action="/crowdfunding-detail" class="form-inline" method="post">
+    <input type="hidden" name="form" value="back">
+	<input type="hidden" name="project_tx_index" value='${project["tx_index"]}'>
+	<input type="hidden" name="backer" value="${address}">
+	<input type="hidden" name="back_price" id="back_price" value="">
+    <div class="modal-header">
+     <a class="close" data-dismiss="modal">X</a>
+     <h3 align="center">Please input your contact here :</h3>
+    </div>
+    <div class="modal-body">
+     <div class="input-group">
+		<span class="input-group-addon">Email:</span>
+		<input type="text" placeholder="Your email" name="backer_email">
+	</div>
+	<p>While the project reach goal,the creater would contact you by email for more informations such as delivery address if need.</p>
+    </div>
+    <div class="modal-footer">
+     <a href="#" class="btn" data-dismiss="modal">Cancel</a>
+	 <button class="btn btn-primary" type="submit"  onclick="this.innerHTML='Waiting';this.disabled=true;form.submit();" >Submit</button>
+    </div>
+    </form>
+	</div>
+   </div>
+</div>
+	
+
+</@template.content>

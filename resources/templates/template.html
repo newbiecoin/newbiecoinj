@@ -2,7 +2,7 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
-	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+	<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"/>
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<meta name="description" content="Newbiecoin is a coin for betting on dice in a decentralized casino.">
 
@@ -35,13 +35,15 @@
 			<#if is_my_wallet?? && is_my_wallet != "My">
 					<li>Viewing other address ${address}<br>Notice: Click your address listed on the right side to go back your wallet. </li>
 			<#else>
+					<li <#if title?? && title=="Crowdfunding">class="active"</#if>><a href="/crowdfunding">Crowdfunding</a></li>
 					<li <#if title?? && title=="Casino">class="active"</#if>><a href="/casino">Casino</a></li>
-					<li <#if title?? && title=="WorldCup">class="active"</#if>><a href="/worldcup">WorldCup2014</a></li>
-					<!--<li <#if title?? && title=="Exchange">class="active"</#if>><a href="/exchange">Exchange(Beta)</a></li> -->
+					<!--<li <#if title?? && title=="WorldCup">class="active"</#if>><a href="/worldcup">WorldCup</a></li>-->
+					<li <#if title?? && title=="Exchange">class="active"</#if>><a href="/exchange">Exchange</a></li>
 					<li <#if title?? && title=="Wallet">class="active"</#if>><a href="/wallet">Wallet</a></li>
 					<!--<li <#if title?? && title=="Participate">class="active"</#if>><a href="/participate">Participate</a></li>-->
 					<li <#if title?? && title=="Technical">class="active"</#if>><a href="/technical">Technical</a></li>
 					<li <#if title?? && title=="Community">class="active"</#if>><a href="/community">Community</a></li>
+					<li><a href="https://bitcointalk.org/index.php?topic=626752.0">中文社区</a></li>
 			</#if>
 	      </ul>
 	      <ul class="nav navbar-nav navbar-right">
@@ -82,7 +84,7 @@
 	</nav>
 
 	<div class="container-fluid content">
-		<#if info?? || error?? || success?? || warning?? || parsing?? || (version_major?? && version_minor?? && min_version_major?? && min_version_minor?? && (version_major?number<min_version_major?number || (version_major?number==min_version_major?number && version_minor?number<min_version_minor?number)))>
+		<#if info?? || error?? || success?? || warning?? || (parsing?? || blocksNBC!=blocksBTC || blocksBTC=0 || blocksNBC=0) || (version_major?? && version_minor?? && min_version_major?? && min_version_minor?? && (version_major?number<min_version_major?number || (version_major?number==min_version_major?number && version_minor?number<min_version_minor?number)))>
 		<div class="row section messages">
 			<#if info??>
 			<div class="alert alert-info">${info}</div>
@@ -99,7 +101,7 @@
 			<#if version_major?? && version_minor?? && min_version_major?? && min_version_minor?? && (version_major?number<min_version_major?number || (version_major?number==min_version_major?number && version_minor?number<min_version_minor?number))>
 			<div class="alert alert-danger">You must update to the latest version of Newbiecoin. Your version is out of date.</div>
 			</#if>
-			<#if parsing??>
+			<#if (parsing?? || blocksNBC!=blocksBTC || blocksBTC=0 || blocksNBC=0)>
 			<div class="alert alert-warning">Newbiecoin is parsing transactions. You can still use the software, but the information you see will be out of date.</div>
 			</#if>
 		</div>

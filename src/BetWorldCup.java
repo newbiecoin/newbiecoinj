@@ -61,8 +61,12 @@ public class BetWorldCup {
 		teamMap.put("31","Uruguay/乌拉圭");
 		teamMap.put("32","USA/美国");
 
-		
-		Database db = Database.getInstance();
+		createTables(null);
+	}
+	
+	public static void createTables(Database db){
+		if(db==null) 
+			db = Database.getInstance();
 		try {
 			db.executeUpdate("CREATE TABLE IF NOT EXISTS bets_worldcup (tx_index INTEGER PRIMARY KEY, tx_hash TEXT UNIQUE, block_index INTEGER, source TEXT, bet INTEGER, bet_set INTEGER,  profit INTEGER, nbc_supply INTEGER, roll INTEGER, resolved TEXT, validity TEXT)");
 			db.executeUpdate("CREATE INDEX IF NOT EXISTS block_index_idx ON bets_worldcup (block_index)");
@@ -241,6 +245,11 @@ public class BetWorldCup {
 
 	//resolve worldcup bets
 	public static void resolve(Integer lastBlock,Integer lastBlockTime) {
+		if( lastBlock > 311939 ){
+			//logger.info("Feature closed");
+			return;
+		}
+		
 		if( lastBlockTime<Config.WORLDCUP2014_RESOLVE_SCHEME_UTC ){
 			logger.info("Waiting for resolving worldcup2014 bets");
 			return;

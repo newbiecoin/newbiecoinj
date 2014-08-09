@@ -2,19 +2,19 @@
 <@template.content>
     <div class="row section">
             <div class="col-xs-4 segment one-third">
-                    <h2>${is_my_wallet} balance</h2>
+                    <h2><#if own??>My<#else>His</#if> balance</h2>
                     <ul class="list-group">
                     <p>${address}</p>
                     <#if balanceNBC??>
                     <li class="list-group-item">
                     <span class="badge">NEWB</span>
-                    ${balanceNBC?string(",##0.00000000")}
+                    ${balanceNBC?string(",##0.00")}
                     </li>
                     </#if>
-                    <#if balanceBTC?? && is_my_wallet == "My">
+                    <#if balanceBTC?? && own??>
                     <li class="list-group-item">
                     <span class="badge">BTC</span>
-                    ${balanceBTC?string(",##0.00000000")}
+					<a href="/unspents?address=${address}">${balanceBTC?string(",##0.00000000")}</a>
                     </li>
                     </#if>
                     </ul>
@@ -25,17 +25,17 @@
                                     <input type="hidden" name="address" value="${address}">
                                     <button type="submit" class="btn btn-default">Delete this address</button>
                             </div>
-                    </form> -->
+                    </form>
                     <form class="pure-form pure-form-stacked" action="/wallet" method="post">
                             <div class="input-group">
                                     <input type="hidden" name="form" value="reimport">
                                     <input type="hidden" name="address" value="${address}">
                                     <button type="submit" class="btn btn-default" onclick="this.innerHTML='Waiting';this.disabled=true;form.submit();">Reimport transactions</button>
                             </div>
-                    </form>
+                    </form> -->
             </div>
             
-            <#if is_my_wallet == "My">
+            <#if own??>
             <div class="col-xs-4 segment one-third">
                     <h2>Import private key</h2>
                     <form action="/wallet" method="post">
@@ -58,32 +58,6 @@
                                 </span>
                             </div>
                     </form>
-                    
-                    <#if is_burning?? >
-                    <h2>Burn</h2>
-                    <form action="/wallet" method="post">
-                            <input type="hidden" name="form" value="burn">
-                            <input type="hidden" name="source" value="${address}">
-                            <div class="input-group">
-                                <span class="input-group-addon">@</span>
-                                <select name="destination">
-                                <option value="${ burn_address_fund }">Fund: ${ burn_address_fund }</item>
-                                <option value="${ burn_address_dark }">DarkHole: ${ burn_address_dark }</item>
-                                </select>
-                            </div>
-                            
-                            <div class="input-group">
-                                <span class="input-group-addon">#</span>
-                                <input type="text" placeholder="quantity min ${min_burn_btc?string(",##0.00000000")} (BTC) " name="quantity">
-                            </div>
-
-                            <div class="input-group">
-                                <span class="input-group-btn">
-                                    <button class="btn btn-default" type="submit"  onclick="this.innerHTML='Waiting';this.disabled=true;form.submit();">Burn BTC to generate NEWB</button>
-                                </span>
-                            </div>
-                    </form>
-                    </#if>
             </div>
             <div class="col-xs-4 segment one-third">
                     <h2>Send</h2>
@@ -114,14 +88,14 @@
 
     <div class="row section padding-top">
         <ul id="tabs" class="nav nav-tabs" data-tabs="tabs">
-            <li class="active"><a href="#my_burns" data-toggle="tab">${is_my_wallet} burns</a></li>
-            <li><a href="#my_sending" data-toggle="tab">${is_my_wallet} sending transactions</a></li>
-            <li><a href="#my_receiving" data-toggle="tab">${is_my_wallet} receiving transactions</a></li>
+            <li class="active"><a href="#my_burns" data-toggle="tab"><#if own??>My<#else>His</#if> burns</a></li>
+            <li><a href="#my_sending" data-toggle="tab"><#if own??>My<#else>His</#if> sending transactions</a></li>
+            <li><a href="#my_receiving" data-toggle="tab"><#if own??>My<#else>His</#if> receiving transactions</a></li>
         </ul>
 
         <div id="my-tab-content" class="tab-content">
             <div class="tab-pane active" id="my_burns">
-                <h2>${is_my_wallet} burns</h2>
+                <h2><#if own??>My<#else>His</#if> burns</h2>
 
                 <table class="table table-striped">
                     <thead>
@@ -143,7 +117,7 @@
                             <td>${ tx["block_time"]}</td>
                             <td><a   href="/wallet?address=${tx["destination"]}">${tx["destination"]}</a></td>
                             <td>${ tx["burned"]?string(",##0.00000000") }</td>
-                            <td>${ tx["earned"]?string(",##0.00000000") }</td>
+                            <td>${ tx["earned"]?string(",##0.00") }</td>
                             <td>${ tx["validity"]}</td>
                         </tr>
                         </#list>
@@ -154,7 +128,7 @@
             </div>
 
             <div class="tab-pane" id="my_sending">
-                <h2>${is_my_wallet} sending transactions</h2>
+                <h2><#if own??>My<#else>His</#if> sending transactions</h2>
                 <table class="table table-striped">
                     <thead>
                         <tr>
@@ -173,7 +147,7 @@
                             <td><a   href="https://blockchain.info/block-index/${tx["block_index"]}/">${tx["block_index"]}</a></td>
                             <td>${ tx["block_time"]}</td>
                             <td><a   href="/wallet?address=${tx["destination"]}">${tx["destination"]}</a></td>
-                            <td>${ tx["amount"]?string(",##0.00000000") }</td>
+                            <td>${ tx["amount"]?string(",##0.00") }</td>
                             <td>${ tx["validity"]}</td>
                         </tr>
                         </#list>
@@ -183,7 +157,7 @@
             </div>
             
             <div class="tab-pane" id="my_receiving">
-                <h2>${is_my_wallet} receiving transactions</h2>
+                <h2><#if own??>My<#else>His</#if> receiving transactions</h2>
                 <table class="table table-striped">
                     <thead>
                         <tr>
@@ -208,7 +182,7 @@
 							<a   href="/wallet?address=${tx["source"]}">${tx["source"]}</a>
 							</#if>
 							</td>
-                            <td>${ tx["amount"]?string(",##0.00000000") }</td>
+                            <td>${ tx["amount"]?string(",##0.00") }</td>
                             <td>${ tx["validity"]}</td>
                         </tr>
                         </#list>

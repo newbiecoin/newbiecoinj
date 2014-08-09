@@ -49,7 +49,7 @@ public class BTCPay {
 					String tx0Hash = new BigInteger(1, Util.toByteArray(message.subList(0, 32))).toString(16);
 					String tx1Hash = new BigInteger(1, Util.toByteArray(message.subList(32, 64))).toString(16);
 					String orderMatchId = tx0Hash + tx1Hash;
-					ResultSet rsOrderMatch = db.executeQuery("select * from order_matches where validity='pending' and id='"+orderMatchId+"';");
+					ResultSet rsOrderMatch = db.executeQuery("select * from order_matches where (validity='pending' or validity='btcpayed') and id='"+orderMatchId+"';");
 					
 					String validity = "invalid";
 					if (rsOrderMatch.next()) {
@@ -60,7 +60,7 @@ public class BTCPay {
 						String orderMatchBackwardAsset = rsOrderMatch.getString("backward_asset");
 						BigInteger orderMatchForwardAmount = BigInteger.valueOf(rsOrderMatch.getLong("forward_amount"));
 						BigInteger orderMatchBackwardAmount = BigInteger.valueOf(rsOrderMatch.getLong("backward_amount"));
-						if (orderMatchValidity.equals("pending")) {
+						if (orderMatchValidity.equals("pending")||orderMatchValidity.equals("btcpayed")) {
 							Boolean update = false;
 							if (orderMatchTx0Address.equals(source) && btcAmount.compareTo(orderMatchForwardAmount)>=0) {
 								update = true;

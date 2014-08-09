@@ -1,6 +1,8 @@
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -32,6 +34,13 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.io.FileOutputStream;
 import java.io.ObjectOutputStream;
+import java.text.ParsePosition;
+import java.util.TimeZone;
+
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
 
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
@@ -42,6 +51,7 @@ import java.io.OutputStream;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.json.JSONObject;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -271,6 +281,23 @@ public class Util {
 		}	
 		return 0;
 	}	
+	
+	public static void updateLastParsedBlock(Integer block_index) {
+		Database db = Database.getInstance();
+		db.executeUpdate("REPLACE INTO sys_parameters (para_name,para_value) values ('last_parsed_block','"+block_index.toString()+"');");
+	}	
+	
+	public static Integer getLastParsedBlock() {
+		Database db = Database.getInstance();
+		ResultSet rs = db.executeQuery("SELECT para_value FROM sys_parameters WHERE para_name='last_parsed_block'");
+		try {
+			while(rs.next()) {
+				return rs.getInt("para_value");
+			}
+		} catch (SQLException e) {
+		}	
+		return 0;
+	}	
 
 	public static void debit(String address, String asset, BigInteger amount, String callingFunction, String event, Integer blockIndex) {
 		Database db = Database.getInstance();
@@ -335,7 +362,7 @@ public class Util {
 			ObjectMapper objectMapper = new ObjectMapper();
 			objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 			AddressInfo addressInfo = objectMapper.readValue(result, new TypeReference<AddressInfo>() {});
-			return BigDecimal.valueOf(addressInfo.result*Config.unit).toBigInteger();
+			return BigDecimal.valueOf(addressInfo.result*Config.btc_unit).toBigInteger();
 		} catch (Exception e) {
 			logger.error(e.toString());
 			return BigInteger.ZERO;
@@ -498,6 +525,224 @@ public class Util {
 		}	
 		return 0;
 	}
+	
+	//the_date format is YYYY-MM-DD
+	//timeZone=null for local time,  timeZone="GMT+0:00" for UTC
+	public static Integer getDateTimestamp(String the_date, String timeZone){
+		SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+		
+		if(timeZone!=null){
+			TimeZone tz = TimeZone.getTimeZone(timeZone); 
+			formatter.setTimeZone(tz);
+		}
+		
+		ParsePosition pos = new ParsePosition(0);
+		Date strtodate = formatter.parse(the_date+" 00:00:00", pos);
+		
+		Long tsInSecond=strtodate.getTime()/1000L;
+		
+		return Integer.parseInt(tsInSecond.toString());
+	}
+	
+	public static String getLeftTimeDescStr(Integer expireUTC){
+		Calendar nowtime=Calendar.getInstance();
+		
+		Long leftSeconds=expireUTC-nowtime.getTimeInMillis()/1000L;
+		
+		if(leftSeconds<0L)
+			return null;
+		
+		String   aboutLeftTimeDesc="";
+		Integer  aboutDays=new Double(java.lang.Math.floor(leftSeconds.doubleValue()/new Double(60*60*24).doubleValue())).intValue();
+		if(aboutDays>0)
+			aboutLeftTimeDesc=aboutDays.toString() + " days";
+		
+		leftSeconds=leftSeconds%(60*60*24);
+		Integer  aboutHours=new Double( java.lang.Math.floor(leftSeconds.doubleValue() /new Double(60*60).doubleValue())).intValue();
+		if(aboutHours>0)
+			aboutLeftTimeDesc=aboutLeftTimeDesc+" "+aboutHours.toString() + " hours";
+		else {
+			leftSeconds=leftSeconds%(60*60);
+			
+			Integer  aboutMins=new Double( java.lang.Math.floor(leftSeconds.doubleValue() /new Double(60).doubleValue())).intValue();
+			if(aboutMins>0)
+				aboutLeftTimeDesc=aboutLeftTimeDesc+" "+aboutMins.toString() + " Minutes";
+		}
+		
+		if(aboutLeftTimeDesc.equals(""))
+			aboutLeftTimeDesc=" < 1 Minute";
+		
+		return aboutLeftTimeDesc;//+" (DEBUG: now="+nowtime.getTimeInMillis()+"  dest="+strtodate.getTime()+")  ";
+	}
+	
+	/*
+	public static String getLeftTimeDescStr(String expire_date){
+		//logger.info("expire_date="+expire_date);
+		SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+		TimeZone tz = TimeZone.getTimeZone("GMT+0:00"); //for UTC time
+		formatter.setTimeZone(tz);
+		ParsePosition pos = new ParsePosition(0);
+		Date strtodate = formatter.parse(expire_date+" 00:00:00", pos);
+		//logger.info("strtodate="+strtodate.toString());
+  
+		Calendar nowtime=Calendar.getInstance();
+		
+		Long leftMillis=strtodate.getTime()-nowtime.getTimeInMillis();
+		//logger.info("leftMillis="+leftMillis);
+		
+		if(leftMillis<0L)
+			return null;
+		
+		String   aboutLeftTimeDesc="";
+		Integer  aboutDays=new Double(java.lang.Math.floor(leftMillis.doubleValue()/new Double(1000*60*60*24).doubleValue())).intValue();
+		if(aboutDays>0)
+			aboutLeftTimeDesc=aboutDays.toString() + " days";
+		
+		leftMillis=leftMillis%(1000*60*60*24);
+		Integer  aboutHours=new Double( java.lang.Math.floor(leftMillis.doubleValue() /new Double(1000*60*60).doubleValue())).intValue();
+		if(aboutHours>0)
+			aboutLeftTimeDesc=aboutLeftTimeDesc+" "+aboutHours.toString() + " hours";
+			
+		return aboutLeftTimeDesc;//+" (DEBUG: now="+nowtime.getTimeInMillis()+"  dest="+strtodate.getTime()+")  ";
+	}
+	*/
+	
+	//Compress string
+	public static String compress(String str) throws IOException {
+		if (str == null || str.length() == 0) {
+		  return str;
+		}
+		ByteArrayOutputStream out = new ByteArrayOutputStream();
+		GZIPOutputStream gzip = new GZIPOutputStream(out);
+		gzip.write(str.getBytes());
+		gzip.close();
+		return out.toString("ISO-8859-1");
+	}
+
+	//Uncompress string
+	public static String uncompress(String str) throws IOException {
+		if (str == null || str.length() == 0) {
+		  return str;
+		}
+		ByteArrayOutputStream out = new ByteArrayOutputStream();
+		ByteArrayInputStream in = new ByteArrayInputStream(str.getBytes("ISO-8859-1"));
+		GZIPInputStream gunzip = new GZIPInputStream(in);
+		byte[] buffer = new byte[256];
+		int n;
+		while ((n = gunzip.read(buffer)) >= 0) {
+		  out.write(buffer, 0, n);
+		}
+		return out.toString();
+	}
+	
+	public static boolean exportTextToFile(String text, String fileName) {
+		try {
+			FileWriter fw = new FileWriter(fileName);  
+			fw.write(text,0,text.length());  
+			fw.flush();  
+			return true;
+		} catch (Exception e) {
+			logger.info(e.toString());
+			return false;
+		}
+	}
+	
+	public static String readTextFile(String fileName){  
+		try {
+			BufferedReader br=new BufferedReader(new FileReader(fileName));
+			String str="";
+			String r=br.readLine();
+			while(r!=null){
+				str+=r;
+				r=br.readLine();
+			}
+			return str;
+		}catch(Exception e){
+			logger.error(e.toString());
+			return null;
+		}
+	} 
+	
+	
+	public static JSONObject getRSAKeys(String address,boolean auto_generate) throws Exception{  
+		String  privateKeyFilename="resources/db/ck-"+address;
+					
+		if (!(new File(privateKeyFilename)).exists() ){
+			if(!auto_generate)
+				return null;
+			
+			//init a rsa key file for current address
+			JSONObject keyMap = RSACoder.initKey();  
+			logger.info("Generated new keys: " + keyMap.toString());  
+		
+			if(!exportTextToFile(keyMap.toString(),privateKeyFilename)){
+				logger.error("Failed to save generated RSA keys to "+privateKeyFilename);
+				return null;
+			}
+		}
+		String  tmpKeyStr=Util.readTextFile(privateKeyFilename);
+		if(tmpKeyStr==null){
+			logger.error("Failed to get RSA keys from "+privateKeyFilename);
+			return null;					
+		}
+		
+		JSONObject keyMap=new JSONObject(tmpKeyStr);
+		
+		return keyMap;
+	}
+	
+	public static boolean exportOriginalBackContact(String back_tx_hash,String contact){
+		try{
+			String  backContactFilename="resources/db/back-contact";
+			
+			JSONObject keyMap = null;	
+			if (!(new File(backContactFilename)).exists() ){
+				keyMap=new JSONObject();
+				keyMap.put(back_tx_hash,contact);
+			} else {
+				String  tmpKeyStr=Util.readTextFile(backContactFilename);
+				if(tmpKeyStr==null){
+					logger.error("Failed to get back contact from "+backContactFilename);
+					return false;					
+				}
+				
+				keyMap=new JSONObject(tmpKeyStr);
+				keyMap.put(back_tx_hash,contact);
+			}
+			
+			if(exportTextToFile(keyMap.toString(),backContactFilename)){
+				return true;
+			}
+			
+		}catch(Exception e){
+			logger.error(e.toString());
+		}
+		
+		return false;
+	}
+	
+	public static String getOriginalBackContact(String back_tx_hash){  
+		try{
+			String  backContactFilename="resources/db/back-contact";
+			
+			if ((new File(backContactFilename)).exists() ){
+				String  tmpKeyStr=Util.readTextFile(backContactFilename);
+				if(tmpKeyStr==null){
+					logger.error("Failed to get back contact from "+backContactFilename);
+					return null;					
+				}
+				
+				JSONObject keyMap=new JSONObject(tmpKeyStr);
+				if(keyMap.has(back_tx_hash))
+					return keyMap.getString(back_tx_hash);
+			}
+		}catch(Exception e){
+			logger.error(e.toString());
+		}
+		
+		return null;
+	}
+	
 }
 
 class AddressInfo {

@@ -1,0 +1,333 @@
+<#import "template.html" as template>
+<@template.content>
+		<div class="row section">
+			<table border="0" width="100%">
+			<tr>
+				<td><h2>Crowdfunding</h2></td>
+				<td align="right"><a class="btn btn-primary btn-lg" role="button" href="/crowdfunding-add">Create a new project...</a></td>
+			</tr>
+			</table>
+		</div>
+		<div class="row section padding-top">
+		    <ul id="tabs" class="nav nav-tabs" data-tabs="tabs">
+		        <li class="active"><a href="#newest_project" data-toggle="tab">The newest!</a></li>
+				<li><a href="#recent_projects" data-toggle="tab">Recent projects</a></li>
+				<li><a href="#my_projects" data-toggle="tab">My projects</a></li>
+				<li><a href="#my_backs" data-toggle="tab">My backs</a></li>
+				<!--<li><a href="#project_stat" data-toggle="tab">Crownfunding statistics</a></li>-->
+		    </ul>
+
+		    <div id="my-tab-content" class="tab-content">
+				<div class="tab-pane active" id="newest_project">
+					<#if recommand_project??>
+					<table class="table table-striped">
+					<tbody>
+					<tr>
+					<td width="66%"><a href='/crowdfunding-detail?project_tx_index=${recommand_project["tx_index"]}'><img src='${recommand_project["topic_img_url"]}' width="640" height="360" ></a></td>
+					<td width="33%">
+						<h2>${recommand_project["title"]}</h2>
+						
+						<table width="100%"  border="0" class="table" >
+						<tbody>
+						<tr>
+							<#if recommand_project["validity"]="valid">
+								<#if recommand_project["left_time_desc"]??>
+									<td colspan="2">Left ${recommand_project["left_time_desc"]} </td>
+									<td align="right">
+									<a class="btn btn-success btn-lg" role="button" href='/crowdfunding-detail?project_tx_index=${recommand_project["tx_index"]}'>View</a>
+									</td>
+								<#else>
+									<td colspan="2"> project expired and pending resolved. </td>
+									<td align="right">
+									<a class="btn btn-info btn-lg" role="button" href='/crowdfunding-detail?project_tx_index=${recommand_project["tx_index"]}'>View</a>
+									</td>
+								</#if>
+							<#elseif recommand_project["validity"]="success">
+							<td colspan="2">Successfully funded!</td>
+							<td align="right">
+							<a class="btn btn-info btn-lg" role="button" href='/crowdfunding-detail?project_tx_index=${recommand_project["tx_index"]}'>View</a>
+							</td>
+							<#elseif recommand_project["validity"]="failed">
+							<td colspan="2">Failed!</td>
+							<td align="right">
+							<a class="btn btn-danger btn-lg" role="button" href='/crowdfunding-detail?project_tx_index=${recommand_project["tx_index"]}'>View</a>
+							</td>
+							<#else>
+							<td colspan="2">Canceled</td>
+							<td align="right">
+							<a class="btn btn-warning btn-lg" role="button" href='/crowdfunding-detail?project_tx_index=${recommand_project["tx_index"]}'>View</a>
+							</td>
+							</#if>
+						</tr>
+						<tr>
+							<td colspan="3">
+							Total ${recommand_project["nbc_funded"]} NEWB  ( ${recommand_project["percent"]}% of ${recommand_project["min_fund"]} NEWB)
+							</td>
+						</tr>
+						<tr>
+							<td></td>
+							<td></td>
+							<td>${recommand_project["backers"]} backers</td>
+						</tr>
+						</tbody>
+						</table>
+						<p>Project by: <a href='/wallet?address=${recommand_project["owner"]}'>${recommand_project["name"]}</a></p>
+						<p>Created time: <a href='https://blockchain.info/block-index/${recommand_project["block_index"]}/'>${recommand_project["block_time"]}</a></p>
+					</td>
+					</tr>
+					</tbody>
+					</table>
+					</#if>
+				</div>
+		        <div class="tab-pane" id="recent_projects">
+					<table class="table table-striped">
+						<thead>
+							<tr>
+								<th>Logo</th>
+								<th>Block</th>
+								<th>Time</th>
+								<th>Title</th>
+								<th>Owner</th>
+								<th>Backers</th>
+								<th>Funded</th>
+								<th>Status</th>
+							</tr>
+						</thead>
+
+						<tbody>
+							<#if my_pending_projects??>
+							<#list my_pending_projects as project>
+								<tr>
+									<td><img src='${project["logo_img_url"]}' width="100" height="100" ></td>
+									<td>Pending</td>
+									<td>Pending</td>
+									<td>${project["title"]}</td>
+									<td><a href="/wallet?address=${project["owner"]}">${project["name"]}</a></td>
+									<td>${project["backers"]}</td>
+									<td>${project["nbc_funded"]} NEWB<br> ( ${project["percent"]}% of ${project["min_fund"]} NEWB)</td>
+									<td>Pending<!--
+										<p align="center">
+										<a class="btn btn-primary btn-lg" role="button" href='/crowdfunding-detail?project_tx_index=${project["tx_index"]}'>View</a>
+										</p>-->
+									</td>
+								</tr>
+							</#list>
+							</#if>
+							
+							<#if recent_projects??>
+							<#list recent_projects as project>
+								<tr>
+									<td><a href='/crowdfunding-detail?project_tx_index=${project["tx_index"]}'><img src='${project["logo_img_url"]}' width="100" height="100" ></a></td>
+									<td><a  href="https://blockchain.info/block-index/${project["block_index"]}/">${project["block_index"]}</a></td>
+									<td>${project["block_time"]}</td>
+									<td>${project["title"]}</td>
+									<td><a href="/wallet?address=${project["owner"]}">${project["name"]}</a></td>
+									<td>${project["backers"]}</td>
+									<td>${project["nbc_funded"]} NEWB<br> ( ${project["percent"]}% of ${project["min_fund"]} NEWB)</td>
+									<td>
+										<#if project["validity"]="valid">
+											<#if project["left_time_desc"]??>
+												Left ${project["left_time_desc"]}
+												<p align="center"><a class="btn btn-success btn-lg" role="button" href='/crowdfunding-detail?project_tx_index=${project["tx_index"]}'>View</a>
+												</p>
+											<#else>
+												project expired and pending resolved. 
+												<p align="center">
+												<a class="btn btn-info btn-lg" role="button" href='/crowdfunding-detail?project_tx_index=${project["tx_index"]}'>View</a>
+												</p>
+											</#if>
+										<#elseif project["validity"]="success">
+											Successfully funded!
+											<p align="center">
+											<a class="btn btn-info btn-lg" role="button" href='/crowdfunding-detail?project_tx_index=${project["tx_index"]}'>View</a>
+											</p>
+										<#elseif project["validity"]="failed">
+											Failed!
+											<p align="center">
+											<a class="btn btn-danger btn-lg" role="button" href='/crowdfunding-detail?project_tx_index=${project["tx_index"]}'>View</a>
+											</p>
+										<#else>
+											Canceled
+											<p align="center">
+											<a class="btn btn-warning btn-lg" role="button" href='/crowdfunding-detail?project_tx_index=${project["tx_index"]}'>View</a>
+											</p>
+										</#if>
+									</td>
+								</tr>
+							</#list>
+							</#if>
+						</tbody>
+					</table>
+				</div>
+
+				<div class="tab-pane" id="my_projects">
+					<table class="table table-striped">
+					<thead>
+						<tr>
+							<th>Logo</th>
+							<th>Block</th>
+							<th>Time</th>
+							<th>Title</th>
+							<th>Owner</th>
+							<th>Backers</th>
+							<th>Funded</th>
+							<th>Status</th>
+						</tr>
+					</thead>
+
+					<tbody>
+						<#if my_pending_projects??>
+						<#list my_pending_projects as project>
+							<tr>
+								<td><img src='${project["logo_img_url"]}' width="100" height="100" ></td>
+								<td>Pending</td>
+								<td>Pending</td>
+								<td>${project["title"]}</td>
+								<td><a href="/wallet?address=${project["owner"]}">${project["name"]}</a></td>
+								<td>${project["backers"]}</td>
+								<td>${project["nbc_funded"]} NEWB<br> ( ${project["percent"]}% of ${project["min_fund"]} NEWB)</td>
+								<td>Pending<!--
+									<p align="center">
+									<a class="btn btn-primary btn-lg" role="button" href='/crowdfunding-detail?project_tx_index=${project["tx_index"]}'>View</a>
+									</p>-->
+								</td>
+							</tr>
+						</#list>
+						</#if>
+						
+						<#if my_projects??>
+						<#list my_projects as project>
+							<tr>
+								<td><a href='/crowdfunding-detail?project_tx_index=${project["tx_index"]}'><img src='${project["logo_img_url"]}' width="100" height="100" ></a></td>
+								<td><a  href="https://blockchain.info/block-index/${project["block_index"]}/">${project["block_index"]}</a></td>
+								<td>${project["block_time"]}</td>
+								<td>${project["title"]}</td>
+								<td><a href="/wallet?address=${project["owner"]}">${project["name"]}</a></td>
+								<td>${project["backers"]}</td>
+								<td>${project["nbc_funded"]} NEWB<br> ( ${project["percent"]}% of ${project["min_fund"]} NEWB)</td>
+								<td>
+									<#if project["validity"]="valid">
+										<#if project["left_time_desc"]??>
+											Left ${project["left_time_desc"]}
+											<p align="center"><a class="btn btn-success btn-lg" role="button" href='/crowdfunding-detail?project_tx_index=${project["tx_index"]}'>View</a>
+											</p>
+										<#else>
+											project expired and pending resolved. 
+											<p align="center">
+											<a class="btn btn-info btn-lg" role="button" href='/crowdfunding-detail?project_tx_index=${project["tx_index"]}'>View</a>
+											</p>
+										</#if>
+									<#elseif project["validity"]="success">
+										Successfully funded!
+										<p align="center">
+										<a class="btn btn-info btn-lg" role="button" href='/crowdfunding-detail?project_tx_index=${project["tx_index"]}'>View</a>
+										</p>
+									<#elseif project["validity"]="failed">
+										Failed!
+										<p align="center">
+										<a class="btn btn-danger btn-lg" role="button" href='/crowdfunding-detail?project_tx_index=${project["tx_index"]}'>View</a>
+										</p>
+									<#else>
+										Canceled
+										<p align="center">
+										<a class="btn btn-warning btn-lg" role="button" href='/crowdfunding-detail?project_tx_index=${project["tx_index"]}'>View</a>
+										</p>
+									</#if>
+								</td>
+							</tr>
+						</#list>
+						</#if>
+					</tbody>
+					</table>
+				</div>
+				
+				<div class="tab-pane" id="my_backs">
+					<table class="table table-striped">
+						<thead>
+							<tr>
+								<th>Project</th>
+								<th>Block</th>
+								<th>Time</th>
+								<th>Backed Item</th>
+								<th>Backer</th>
+								<th>Status</th>
+							</tr>
+						</thead>
+
+						<tbody>
+							<#if my_pending_backs??>
+							<#list my_pending_backs as back>
+								<tr>
+									<td><a href='/crowdfunding-detail?project_tx_index=${back["project_tx_index"]}'><img src='${back["logo_img_url"]}' width="100" height="100" ></a></td>
+									<td><a  href="https://blockchain.info/block-index/${back["block_index"]}/">${project["block_index"]}</a></td>
+									<td>Pending</td>
+									<td>${project["title"]}</td>
+									<td><a href='/wallet?address=${back["backer"]}'>${back["email"]}</a></td>
+									<td>Pending
+										<p align="center">
+										<a class="btn btn-primary btn-lg" role="button" href='/crowdfunding-detail?project_tx_index=${project["tx_index"]}'>View</a>
+										</p>
+									</td>
+								</tr>
+							</#list>
+							</#if>
+							
+							<#if my_backs??>
+							<#list my_backs as back>
+								<tr>
+									<td><a href='/crowdfunding-detail?project_tx_index=${back["project_tx_index"]}'><img src='${back["logo_img_url"]}' width="100" height="100" ></a></td>
+									<td><a  href='https://blockchain.info/block-index/${back["block_index"]}/'>${back["block_index"]}</a></td>
+									<td>${back["block_time"]}</td>
+									<td>Pledge ${back["item_price"]} NEWB</strong><br>${back["item_label"]}</td>
+									<td><a href='/wallet?address=${back["backer"]}'>${back["email"]}</a></td>
+									<td>
+										<#if back["validity"]=="valid">
+											<#if back["project_validity"]=="valid">
+												valid
+											<#elseif back["project_validity"]=="success">
+												success
+											<#elseif back["project_validity"]=="failed">
+												refunded<br>(project failed)
+											<#else>
+												refunded<br>(project canceled)
+											</#if>
+										<#else>
+											${back["validity"]}
+										</#if>
+									</td>
+								</tr>
+							</#list>
+							</#if>
+						</tbody>
+					</table>
+				</div>
+				<!--
+		        <div class="tab-pane" id="project_stat">
+					<h2>Hottest projects</h2>
+					<table class="table table-striped">
+							<thead>
+									<tr>
+											<th>Source address</th>
+											<th>Bet times</th>
+											<th>Average project size</th>
+											<th>Total profit</th>
+									</tr>
+							</thead>
+							<tbody>
+							<#if winners??>
+							<#list winners as winner>
+									<tr>
+											<td><a href="/wallet?address=${winner["owner"]}">${winner["owner"]}</a></td>
+											<td>${winner["bet_count"]}</td>
+											<td>${winner["avg_bet"]} NEWB</td>
+											<td>${winner["sum_profit"]} NEWB</td>
+									</tr>
+							</#list>
+							</#if>
+							</tbody>
+					</table>
+		        </div>
+				-->
+		</div>
+
+</@template.content>

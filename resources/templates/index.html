@@ -2,20 +2,87 @@
 <@template.content>
 
 <div class="row section">
-		<img src="/images/business_cards.jpeg" style="height: 250px;" class="float_right" />
+		<a href="/crowdfunding-detail?project_tx_index=137"><img src="/images/t-topic.jpg" style="height: 250px;" class="float_right" /></a>
 		<div class="page-header">
-		  <h1>Newbiecoin <small>a coin for betting in a decentralized casino</small></h1>
+		  <h1>Newbiecoin <small>a unique coin that focus on decentralized applications such as decentralized crowdfunding,decentralized casino.</small></h1>
 		</div>
-		<p>Newbiecoin is a coin and a casino. It's made for a little joy. <a href="/participate">Download</a> the Newbiecoin software &#8212; including wallet ,decentralized casino, and decentralized exchange(coming soon) . Start playing today!</p>
-		<p>Coins were created by burning Bitcoins during a creative "Twin-channel Proof of Burn" period.</p>
-		<p>Built on top of the Bitcoin blockchain, Newbiecoin is a casino that is truly decentralized. There is no central point of failure. The owner can't run away with the bankroll. It's owned by the people.</p>
-		<p><a class="btn btn-primary btn-lg" role="button" href="/participate">Download</a> <a class="btn btn-primary btn-lg" role="button" href="/technical">Learn more</a></p>
+		<p>Newbiecoin is a coin and a decentralized platform. It's made for a little joy. <a href="/participate">Download</a> the Newbiecoin software &#8212; including wallet , decentralized crowdfunding, decentralized casino, and decentralized exchange . Start playing today!</p>
+		<p>Coins were created by burning Bitcoins during a creative "Twin-channel Proof of Burn" period.Now there are total ${supply} NEWB.</p>
+		<p>Built on top of the Bitcoin blockchain, Newbiecoin is a platform that is truly decentralized. There is no central point of failure. The owner can't run away with the bankroll. It's owned by the people.</p>
+		<p><a class="btn btn-primary btn-lg" role="button" href="/technical">Learn more</a></p>
 </div>
 <div class="row section">
 <h2>News</h2>
 <iframe width="100%" height="50" scrolling="auto" frameborder="no" name="news_content" id="news_content" src="${news_url}"></iframe>
 </div>
 
+<div class="row section">
+<table border="0" width="100%">
+<tr>
+	<td><h2>Crowdfunding</h2></td>
+	<td align="right"><a class="btn btn-primary btn-lg" role="button" href="/crowdfunding-add">Create a new project...</a></td>
+</tr>
+</table>
+<#if recommand_project??>
+<table class="table table-striped">
+<tbody>
+<tr>
+<td width="66%"><a href='/crowdfunding-detail?project_tx_index=${recommand_project["tx_index"]}'><img src='${recommand_project["topic_img_url"]}' width="640" height="360" ></a></td>
+<td width="33%">
+	<h2>${recommand_project["title"]}</h2>
+	
+	<table width="100%"  border="0" class="table" >
+	<tbody>
+	<tr>
+		<#if recommand_project["validity"]="valid">
+			<#if recommand_project["left_time_desc"]??>
+				<td colspan="2">Left ${recommand_project["left_time_desc"]} </td>
+				<td align="right">
+				<a class="btn btn-success btn-lg" role="button" href='/crowdfunding-detail?project_tx_index=${recommand_project["tx_index"]}'>View</a>
+				</td>
+			<#else>
+				<td colspan="2"> project expired and pending resolved. </td>
+				<td align="right">
+				<a class="btn btn-info btn-lg" role="button" href='/crowdfunding-detail?project_tx_index=${recommand_project["tx_index"]}'>View</a>
+				</td>
+			</#if>
+		<#elseif recommand_project["validity"]="success">
+		<td colspan="2">Successfully funded!</td>
+		<td align="right">
+		<a class="btn btn-info btn-lg" role="button" href='/crowdfunding-detail?project_tx_index=${recommand_project["tx_index"]}'>View</a>
+		</td>
+		<#elseif recommand_project["validity"]="failed">
+		<td colspan="2">Failed!</td>
+		<td align="right">
+		<a class="btn btn-danger btn-lg" role="button" href='/crowdfunding-detail?project_tx_index=${recommand_project["tx_index"]}'>View</a>
+		</td>
+		<#else>
+		<td colspan="2">Canceled</td>
+		<td align="right">
+		<a class="btn btn-warning btn-lg" role="button" href='/crowdfunding-detail?project_tx_index=${recommand_project["tx_index"]}'>View</a>
+		</td>
+		</#if>
+	</tr>
+	<tr>
+		<td colspan="3">
+		Total ${recommand_project["nbc_funded"]} NEWB  ( ${recommand_project["percent"]}% of ${recommand_project["min_fund"]} NEWB)
+		</td>
+	</tr>
+	<tr>
+		<td></td>
+		<td></td>
+		<td>${recommand_project["backers"]} backers</td>
+	</tr>
+	</tbody>
+	</table>
+	<p>Project by: <a href='/wallet?address=${recommand_project["owner"]}'>${recommand_project["name"]}</a></p>
+	<p>Created time: <a href='https://blockchain.info/block-index/${recommand_project["block_index"]}/'>${recommand_project["block_time"]}</a></p>
+</td>
+</tr>
+</tbody>
+</table>
+</#if>
+</div>
 <div class="row section">
 		<h2>Roll dice</h2>
 		<form action="/casino" class="form-inline" method="post">
@@ -49,7 +116,7 @@
 
 		</form>
 </div>
-
+<#if bets??>
 <div class="row section">
 		<h2>Recent <a href="/casino">bets</a></h2>
 		<table class="table table-striped">
@@ -80,5 +147,5 @@
 				</tbody>
 		</table>
 </div>
-
+</#if>
 </@template.content>

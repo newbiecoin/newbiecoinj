@@ -113,9 +113,14 @@ public class Database {
 			executeUpdate("CREATE TABLE IF NOT EXISTS messages(message_index INTEGER PRIMARY KEY, block_index INTEGER, command TEXT, category TEXT, bindings TEXT)");
 			executeUpdate("CREATE INDEX IF NOT EXISTS block_index_idx ON messages (block_index)");
 			
+			// Parameters
+			executeUpdate("CREATE TABLE IF NOT EXISTS sys_parameters (para_name VARCHAR(32) PRIMARY KEY, para_value TEXT )");
+			
 			//Worldcup
-			executeUpdate("CREATE TABLE IF NOT EXISTS bets_worldcup (tx_index INTEGER PRIMARY KEY, tx_hash TEXT UNIQUE, block_index INTEGER, source TEXT, bet INTEGER, bet_set INTEGER,  profit INTEGER, nbc_supply INTEGER, roll INTEGER, resolved TEXT, validity TEXT)");
-			executeUpdate("CREATE INDEX IF NOT EXISTS block_index_idx ON bets_worldcup (block_index)");
+			BetWorldCup.createTables(this);
+			
+			//CrowdFund
+			CrowdfundingProject.createTables(this);
 
 			updateMinorVersion();
 		} catch (Exception e) {
@@ -143,7 +148,7 @@ public class Database {
 	public ResultSet executeQuery(String query) {
 		try {
 			ResultSet rs = (connection.createStatement()).executeQuery(query);
-			logger.info("Select query: "+query);
+			//logger.info("Select query: "+query);
 			return rs;
 		} catch (SQLException e) {
 			logger.error(e.toString());

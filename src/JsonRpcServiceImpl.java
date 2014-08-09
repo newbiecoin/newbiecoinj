@@ -20,12 +20,12 @@ public class JsonRpcServiceImpl implements JsonRpcService {
 	
 	public String getBalance(String address) {
 		BigInteger balance = Util.getBalance(address, "NBC");
-		return Double.toString(balance.doubleValue() / Config.unit);
+		return Double.toString(balance.doubleValue() / Config.nbc_unit);
 	}
 	
 	public String send(String source, String destination, Double amount) {
 		Blocks blocks = Blocks.getInstance();
-		BigInteger quantity = new BigDecimal(amount*Config.unit).toBigInteger();
+		BigInteger quantity = new BigDecimal(amount*Config.nbc_unit).toBigInteger();
 		try {
 			Transaction tx = Send.create(source, destination, "NBC", quantity);
 			blocks.sendTransaction(source, tx);
@@ -46,7 +46,7 @@ public class JsonRpcServiceImpl implements JsonRpcService {
 		try {
 			while (rs.next()) {
 				HashMap<String,Object> map = new HashMap<String,Object>();
-				map.put("amount", String.format("%.8f", BigInteger.valueOf(rs.getLong("amount")).doubleValue()/Config.unit.doubleValue()));
+				map.put("amount", String.format(Config.nbc_display_format, BigInteger.valueOf(rs.getLong("amount")).doubleValue()/Config.nbc_unit.doubleValue()));
 				map.put("tx_hash", rs.getString("tx_hash"));
 				map.put("source", rs.getString("source"));
 				map.put("destination", rs.getString("destination"));
@@ -67,7 +67,7 @@ public class JsonRpcServiceImpl implements JsonRpcService {
 		try {
 			while (rs.next()) {
 				HashMap<String,Object> map = new HashMap<String,Object>();
-				map.put("amount", String.format("%.8f", BigInteger.valueOf(rs.getLong("amount")).doubleValue()/Config.unit.doubleValue()));
+				map.put("amount", String.format(Config.nbc_display_format, BigInteger.valueOf(rs.getLong("amount")).doubleValue()/Config.nbc_unit.doubleValue()));
 				map.put("tx_hash", rs.getString("tx_hash"));
 				map.put("source", rs.getString("source"));
 				map.put("destination", rs.getString("destination"));
@@ -89,7 +89,7 @@ public class JsonRpcServiceImpl implements JsonRpcService {
 		try {
 			address = blocks.importPrivateKey(privateKey);
 			BigInteger balanceBTC = Util.getBalance(address, "BTC");
-			return "\""+address+"\""+":"+String.format("%.8f",balanceBTC.doubleValue() / Config.unit.doubleValue());
+			return "\""+address+"\""+":"+String.format("%.8f",balanceBTC.doubleValue() / Config.btc_unit.doubleValue());
 		} catch (Exception e) {
 			return "Error: "+e.getMessage();
 		}

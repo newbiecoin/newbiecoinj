@@ -21,7 +21,7 @@ public class Config {
 	
 	//version
 	public static Integer majorVersion = 2;
-	public static Integer minorVersion = 2;
+	public static Integer minorVersion = 3;
 	public static String version = Integer.toString(majorVersion)+"."+Integer.toString(minorVersion);
 	public static Integer majorVersionDB = 1;
 	public static Integer minorVersionDB = 2;
@@ -60,7 +60,7 @@ public class Config {
 	//casino
 	public static String houseFunctionName = "bet house fee";
 	public static Double houseEdge = 0.01; 
-	public static String houseAddressFund = burnAddressFund;  //House fund
+	public static String houseAddressFund = "1NEWBhDUzacwdat1KcKDnYdUjQL15DLNyP";  //House fund
 	public static Short BET_BIGGER = 1;
 	public static Short BET_SMALLER = 0;
 	public static Integer betStartBlock=firstBlock+1;
@@ -74,14 +74,18 @@ public class Config {
 	public static Integer WORLDCUP2014_BETTING_END_UTC = 1403913600;  //UTC 2014-06-28 00:00:00
 	public static Integer WORLDCUP2014_RESOLVE_SCHEME_UTC = 1405285200; //UTC 2014-07-13 21:00:00
 	
-	//bitcoin
-	public static Integer dustSize = 5430*2;
-	public static Integer minFee = 10000;
-	public static Integer dataValue = 0;
-	
 	//protocol
 	public static String txTypeFormat = ">I";
-	public static Integer unit = 100000000;
+	public static Integer btc_unit = 100000000;
+	public static Integer nbc_unit = 10000;//100000000 changed to 10000 , 2014-08-05
+	public static String nbc_display_format = "%.2f";
+	
+	//bitcoin
+	public static Integer dustSize = 5430*2;
+	public static Integer minOrderMatchBTC = 100000;
+	public static Integer minFee = 10000;
+	public static Integer crowdfundingFee = 20000;
+	public static Integer dataValue = 0;
 	
 	//etc.
 	public static Integer maxExpiration = 4*2016;

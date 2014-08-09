@@ -51,6 +51,7 @@ import com.google.bitcoin.core.Wallet;
 import com.google.bitcoin.crypto.TransactionSignature;
 import com.google.bitcoin.net.discovery.DnsDiscovery;
 import com.google.bitcoin.params.MainNetParams;
+import com.google.bitcoin.params.TestNet3Params;
 import com.google.bitcoin.script.Script;
 import com.google.bitcoin.script.ScriptBuilder;
 import com.google.bitcoin.script.ScriptChunk;
@@ -158,7 +159,9 @@ public class Blocks implements Runnable {
 		if (!initializing) {
 			initializing = true;
 			Locale.setDefault(new Locale("en", "US"));
+
 			params = MainNetParams.get();
+				
 			try {
 				if ((new File(walletFile)).exists()) {
 					statusMessage = "Found wallet file"; 
@@ -203,7 +206,19 @@ public class Blocks implements Runnable {
 					}
 				}
 
+				Database db = Database.getInstance();
+				try {
+					Integer lastParsedBlock = Util.getLastParsedBlock(); 
+					if(lastParsedBlock.equals(0)){
+						db.executeUpdate("CREATE TABLE IF NOT EXISTS sys_parameters (para_name VARCHAR(32) PRIMARY KEY, para_value TEXT )");
+						lastParsedBlock = Util.getLastBlock(); 
+						Util.updateLastParsedBlock(lastParsedBlock); 
+					}
+				} catch (Exception e) {
+					logger.error(e.toString());
+				}
 				BetWorldCup.init();
+				CrowdfundingProject.init();
 			} catch (Exception e) {
 				logger.error("Error during init: "+e.toString());
 				e.printStackTrace();
@@ -247,10 +262,14 @@ public class Blocks implements Runnable {
 				working = true;
 			}
 			try {
+				//parseBlock(308840,1404281522);
+				//System.exit(0);
+				
 				//catch NewbieCoin up to Bitcoin
 				Integer blockHeight = blockStore.getChainHead().getHeight();
 				Integer lastBlock = Util.getLastBlock();
 				Integer lastBlockTime = Util.getLastBlockTimestamp();
+				
 				bitcoinBlock = blockHeight;
 				newbiecoinBlock = lastBlock;
 
@@ -264,7 +283,6 @@ public class Blocks implements Runnable {
 				if (lastBlock < blockHeight) {
 					//traverse new blocks
 					parsing = true;
-					Database db = Database.getInstance();
 					Integer blocksToScan = blockHeight - lastBlock;
 					List<Sha256Hash> blockHashes = new ArrayList<Sha256Hash>();
 
@@ -283,21 +301,37 @@ public class Blocks implements Runnable {
 						importBlock(block, blockHeight);
 					}
 
-					if (getDBMinorVersion()<Config.minorVersionDB){
-						reparse(true);
-						db.updateMinorVersion();		    	
-					}else{
-						parseFrom(nextBlock, true);
-					}
 					parsing = false;
 				}
-				Bet.resolve(blockHeight);
-				BetWorldCup.resolve(blockHeight,lastBlockTime);
-				Order.expire();
 			} catch (Exception e) {
 				logger.error("Error during follow: "+e.toString());
 				e.printStackTrace();
 			}	
+			
+			//20140702, ensure to parse new imported blocks while follow finished or failed
+			try{ 
+				Integer lastImportedBlock = Util.getLastBlock();
+				Integer lastImportedBlockTime = Util.getLastBlockTimestamp();
+				Integer lastParsedBlock = Util.getLastParsedBlock(); 
+				if (lastParsedBlock < lastImportedBlock) {
+					parsing = true;
+					if (getDBMinorVersion()<Config.minorVersionDB){
+						reparse(true);
+						Database db = Database.getInstance();
+						db.updateMinorVersion();		    	
+					}else{
+						parseFrom(lastParsedBlock+1, true);
+					}
+					parsing = false;
+				}
+				//Bet.resolve(lastImportedBlock);
+				//BetWorldCup.resolve(lastImportedBlock,lastImportedBlockTime);
+				//Order.expire();
+			} catch (Exception e) {
+				logger.error("Error during parse: "+e.toString());
+				e.printStackTrace();
+			}	
+			
 			if (!force) {
 				working = false;
 			}
@@ -332,9 +366,9 @@ public class Blocks implements Runnable {
 			for (Transaction tx : block.getTransactions()) {
 				importTransaction(tx, block, blockHeight);
 			}
-			Bet.resolve(blockHeight); 
-			BetWorldCup.resolve(blockHeight,new Long(block.getTimeSeconds()).intValue());
-			Order.expire();
+			//Bet.resolve(blockHeight);  //pengding test
+			//BetWorldCup.resolve(blockHeight,new Long(block.getTimeSeconds()).intValue());
+			//Order.expire();
 		} catch (SQLException e) {
 		}
 	}
@@ -461,6 +495,9 @@ public class Blocks implements Runnable {
 		db.executeUpdate("delete from order_match_expirations;");
 		db.executeUpdate("delete from messages;");
 		db.executeUpdate("delete from bets_worldcup;");
+		db.executeUpdate("delete from crowdfunding_projects;");
+		db.executeUpdate("delete from crowdfunding_follows;");
+		db.executeUpdate("delete from sys_parameters;");
 		new Thread() { public void run() {parseFrom(0, force);}}.start();
 	}
 
@@ -482,7 +519,10 @@ public class Blocks implements Runnable {
 					parseBlock(blockIndex,blockTime);
 					Bet.resolve(blockIndex);
 					BetWorldCup.resolve(blockIndex,blockTime);
+					CrowdfundingProject.resolve(blockIndex,blockTime);
 					Order.expire(blockIndex);
+					
+					Util.updateLastParsedBlock(blockIndex); 
 				}
 			} catch (SQLException e) {
 				// TODO Auto-generated catch block
@@ -543,12 +583,19 @@ public class Blocks implements Runnable {
 				} else {
 					List<Byte> messageType = getMessageTypeFromTransaction(dataString);
 					List<Byte> message = getMessageFromTransaction(dataString);
-
+					
+					logger.info("\n--------------------\n Parsing txIndex "+txIndex.toString()+"\n------------\n");
+					
 					if (messageType!=null && messageType.size()>=4 && message!=null) {
+						logger.info("\n--------------------\n Parsing messageType "+messageType.get(3)+"\n------------\n");
 						if (messageType.get(3)==Bet.id.byteValue()) {
 							Bet.parse(txIndex, message);
 						} else if (messageType.get(3)==BetWorldCup.id.byteValue()) {
 							BetWorldCup.parse(txIndex, message);
+						} else if (messageType.get(3)==CrowdfundingProject.id.byteValue()) {
+							CrowdfundingProject.parse(txIndex, message);
+						} else if (messageType.get(3)==CrowdfundingBack.id.byteValue()) {
+							CrowdfundingBack.parse(txIndex, message);
 						} else if (messageType.get(3)==Send.id.byteValue()) {
 							Send.parse(txIndex, message);
 						} else if (messageType.get(3)==Order.id.byteValue()) {
@@ -743,7 +790,7 @@ public class Blocks implements Runnable {
 								try {
 									if (key.toAddress(params).equals(new Address(params, source))) {
 										//System.out.println("Spending "+sha256Hash+" "+unspent.vout);
-										totalInput = totalInput.add(BigDecimal.valueOf(unspent.amount*Config.unit).toBigInteger());
+										totalInput = totalInput.add(BigDecimal.valueOf(unspent.amount*Config.btc_unit).toBigInteger());
 										TransactionInput input = new TransactionInput(params, tx, new byte[]{}, txOutPt);
 										tx.addInput(input);
 										inputScripts.add(script);
@@ -767,7 +814,7 @@ public class Blocks implements Runnable {
 
 			if (totalInput.compareTo(totalOutput)<0) {
 				logger.info("Not enough inputs. Output: "+totalOutput.toString()+", input: "+totalInput.toString());
-				throw new Exception("Not enough BTC to cover transaction of "+String.format("%.8f",totalOutput.doubleValue()/Config.unit)+" BTC.");
+				throw new Exception("Not enough BTC to cover transaction of "+String.format("%.8f",totalOutput.doubleValue()/Config.btc_unit)+" BTC.");
 			}
 			BigInteger totalChange = totalInput.subtract(totalOutput);
 

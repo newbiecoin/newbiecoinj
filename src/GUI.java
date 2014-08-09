@@ -67,18 +67,24 @@ public class GUI extends Application {
 				
 				Thread progressUpdateThread = new Thread(blocks) { 
 					public void run() {
-						while(blocks.newbiecoinBlock == 0  || blocks.working || blocks.parsing ||  blocks.newbiecoinBlock<blocks.bitcoinBlock ) {
+						Integer lastParsedBlock=Util.getLastParsedBlock();
+						while(blocks.newbiecoinBlock == 0  || blocks.working || blocks.parsing 
+								|| lastParsedBlock<blocks.bitcoinBlock ) {
 							if (blocks.newbiecoinBlock > 0) {
-								updateMessage("Block " + blocks.newbiecoinBlock + "/" + blocks.bitcoinBlock);
+								if( blocks.newbiecoinBlock < blocks.bitcoinBlock )
+									updateMessage("Block " + blocks.newbiecoinBlock + "/" + blocks.bitcoinBlock);
+								else
+									updateMessage("Parsing " + blocks.newbiecoinBlock + "/" + blocks.bitcoinBlock);
 							} else {
 								updateMessage(blocks.statusMessage);		
 							}
 							try {
-								Thread.sleep(1000);
+								Thread.sleep(2000);
 							} catch (InterruptedException e) {
 								// TODO Auto-generated catch block
 								e.printStackTrace();
 							}
+							lastParsedBlock=Util.getLastParsedBlock();
 						}
 						
 					}
