@@ -82,6 +82,12 @@ public class Blocks implements Runnable {
 	public Integer bitcoinBlock = 0;
 	public Integer newbiecoinBlock = 0;
 	public String statusMessage = "";
+	
+	private static String lastTransctionSource=null;
+	private static String lastTransctionDestination=null;
+	private static BigInteger lastTransctionBtcAmount=null;
+	private static BigInteger lastTransctionFee=null;
+	private static String lastTransctionDataString=null;
 
 	public static Blocks getInstanceSkipVersionCheck() {
 		if(instance == null) {
@@ -721,6 +727,24 @@ public class Blocks implements Runnable {
 	 */
 
 	public Transaction transaction(String source, String destination, BigInteger btcAmount, BigInteger fee, String dataString) throws Exception {
+		//Anti duplicate same reuqest
+		if( source.equals(lastTransctionSource) 
+		   && (lastTransctionDestination!=null && lastTransctionDestination.equals(destination) )
+		   && btcAmount.compareTo(lastTransctionBtcAmount)==0
+		   && fee.compareTo(lastTransctionFee)==0
+		   && (lastTransctionDataString!=null && lastTransctionDataString.equals(dataString))
+		   ){
+			logger.error("Error for duplicate transaction request");
+			//System.exit(0);
+			return null;
+		}
+		
+		lastTransctionSource=source;
+		lastTransctionDestination=destination;
+		lastTransctionBtcAmount=btcAmount;
+		lastTransctionFee=fee;
+		lastTransctionDataString=dataString;
+		
 		Transaction tx = new Transaction(params);
 		if (destination.equals("") || btcAmount.compareTo(BigInteger.valueOf(Config.dustSize))>=0) {
 

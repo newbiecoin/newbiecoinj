@@ -522,7 +522,7 @@ public class Server implements Runnable {
 				attributes.put("error", e.getMessage());
 			}
 		}
-		if (request.queryParams().contains("form") && request.queryParams("form").equals("btcpay")) {
+		else if (request.queryParams().contains("form") && request.queryParams("form").equals("btcpay")) {
 			String orderMatchId = request.queryParams("order_match_id");
 			try {
 				Transaction tx = BTCPay.create(orderMatchId);
@@ -535,7 +535,7 @@ public class Server implements Runnable {
 				attributes.put("error", e.getMessage());
 			}
 		}
-		if (request.queryParams().contains("form") && request.queryParams("form").equals("buy")) {
+		else if (request.queryParams().contains("form") && request.queryParams("form").equals("buy")) {
 			String source = request.queryParams("source");
 			Double price_btc = Double.parseDouble(request.queryParams("price_btc"));
 			Double rawQuantity = Double.parseDouble(request.queryParams("quantity"));
@@ -544,13 +544,15 @@ public class Server implements Runnable {
 			BigInteger expiration = BigInteger.valueOf(Long.parseLong(request.queryParams("expiration")));
 			try {
 				Transaction tx = Order.create(source, "BTC", btcQuantity, "NBC", quantity, expiration, BigInteger.ZERO, BigInteger.ZERO);
-				blocks.sendTransaction(source,tx);
+				
+				blocks.sendTransaction(source,tx);				
+				
 				attributes.put("success", "Your order of buying NEWB had been submited.Please wait confirms for at least 1 block.");
 			} catch (Exception e) {
 				attributes.put("error", e.getMessage());
 			}					
 		}
-		if (request.queryParams().contains("form") && request.queryParams("form").equals("sell")) {
+		else if (request.queryParams().contains("form") && request.queryParams("form").equals("sell")) {
 			String source = request.queryParams("source");
 			Double price_btc = Double.parseDouble(request.queryParams("price_btc"));
 			Double rawQuantity = Double.parseDouble(request.queryParams("quantity"));
@@ -1554,7 +1556,7 @@ public class Server implements Runnable {
 				map.put("email", rs.getString("email"));
 				map.put("tx_index", rs.getString("tx_index"));
 				map.put("tx_hash", rs.getString("tx_hash"));
-				map.put("item_price", back_item_price_nbc);
+				map.put("item_price", BigInteger.valueOf(back_item_price_nbc).doubleValue()/Config.nbc_unit.doubleValue());
 				map.put("validity", rs.getString("validity"));
 				map.put("block_index", rs.getString("block_index"));
 				map.put("block_time", Util.timeFormat(rs.getInt("block_time")));
@@ -1751,7 +1753,7 @@ public class Server implements Runnable {
 						map.put("backer", rs.getString("backer"));
 						map.put("tx_index", rs.getString("tx_index"));
 						map.put("tx_hash", rs.getString("tx_hash"));
-						map.put("item_price", back_item_price_nbc);
+						map.put("item_price", BigInteger.valueOf(back_item_price_nbc).doubleValue()/Config.nbc_unit.doubleValue()); 
 						map.put("validity", rs.getString("validity"));
 						map.put("block_index", rs.getString("block_index"));
 						map.put("block_time", Util.timeFormat(rs.getInt("block_time")));

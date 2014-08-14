@@ -178,7 +178,7 @@ public class Order {
 		}
 	}
 	public static void match(Integer txIndex) {
-		logger.info("Matching orders for txIndex="+txIndex);
+		logger.info("###############  Matching orders for txIndex="+txIndex);
 		
 		Database db = Database.getInstance();
 		ResultSet rstx1 = db.executeQuery("select * from orders where validity='valid' and tx_index="+txIndex.toString());
@@ -191,7 +191,7 @@ public class Order {
 				String tx1GetAsset = rstx1.getString("get_asset");
 				String tx1Hash = rstx1.getString("tx_hash");
 				String tx1Source = rstx1.getString("source");
-				ResultSet rstx0 = db.executeQuery("select * from orders where give_asset='"+tx1GetAsset+"' and get_asset='"+tx1GiveAsset+"' and validity='valid' order by get_amount/give_amount, tx_index;");
+				ResultSet rstx0 = db.executeQuery("select 1.0*get_amount/give_amount as price_index,* from orders where give_asset='"+tx1GetAsset+"' and get_asset='"+tx1GiveAsset+"' and validity='valid' order by price_index, tx_index;");
 				BigInteger tx1FeeRemaining = BigInteger.valueOf(rstx1.getLong("fee_remaining"));
 				BigInteger tx1FeeRequired = BigInteger.valueOf(rstx1.getLong("fee_required"));
 				BigInteger tx1GiveRemaining = BigInteger.valueOf(rstx1.getLong("give_remaining"));
