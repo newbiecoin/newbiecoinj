@@ -1,24 +1,27 @@
 <#import "template.html" as template>
 <@template.content>
 		<div class="row section">
-				<h2>${LANG_ROLL_DICE}</h2>
-				<form action="/casino" class="form-inline" method="post">
+				<h2>WorldCup2014/世界杯竞猜</h2>
+				<#if house_broadcast_enabled??>
+				<form action="/worldcup" class="form-inline" method="post">
 
-						<input type="hidden" name="form" value="bet">
-						<input type="hidden" name="source" value="${address}">
+						<input type="hidden" name="form" value="broadcast">
 
-					  <div class="form-group">
+						<div class="form-group">
 							<div class="input-group">
-								<span class="input-group-addon">#</span>
-								<input type="text" placeholder="${LANG_BET_SIZE} (NEWB)" name="bet">
-							</div>
+                                <span class="input-group-addon">Champion</span>
+                                <select name="champion">
+								<option value="">Please select</item>
+								${team_select_html}
+                                </select>
+                            </div>
 						</div>
 						<div class="form-group">
 							<div class="input-group">
-                                <span class="input-group-addon">?</span>
-                                <select name="big_or_small">
-								<option value="1">${LANG_BIGGER}[5-9]</item>
-                                <option value="0">${LANG_SMALLER}[0-4]</item>
+                                <span class="input-group-addon">Second</span>
+                                <select name="second">
+								<option value="">Please select</item>
+								${team_select_html}
                                 </select>
                             </div>
 						</div>
@@ -26,44 +29,86 @@
 							<div class="input-group">
 								<span>&nbsp;&nbsp;&nbsp;&nbsp;</span>
 								<span class="input-group-btn">
-									<button class="btn btn-default" type="submit"  onclick="this.innerHTML='Waiting';this.disabled=true;form.submit();" <#if !own??>disabled="disabled"</#if>>${LANG_ROLL_DICE}</button>
+									<button class="btn btn-default" type="submit"  onclick="this.innerHTML='Waiting';this.disabled=true;form.submit();">Broadcast resolved</button>
 								</span>
 							</div>
 						</div>
 
 				</form>
+				<#else>
+				<form action="/worldcup" class="form-inline" method="post">
+
+						<input type="hidden" name="form" value="bet">
+						<input type="hidden" name="source" value="${address}">
+
+					  <div class="form-group">
+							<div class="input-group">
+								<span class="input-group-addon">#</span>
+								<input type="text" placeholder="bet size (NEWB)/下注菜鸟币数额" name="bet">
+							</div>
+						</div>
+						<div class="form-group">
+							<div class="input-group">
+                                <span class="input-group-addon">Champion/冠军</span>
+                                <select name="champion">
+								<option value="">Please select/请选择</item>
+								${team_select_html}
+                                </select>
+                            </div>
+						</div>
+						<div class="form-group">
+							<div class="input-group">
+                                <span class="input-group-addon">Second/亚军</span>
+                                <select name="second">
+								<option value="">Please select/请选择</item>
+								${team_select_html}
+                                </select>
+                            </div>
+						</div>
+						<div class="form-group">
+							<div class="input-group">
+								<span>&nbsp;&nbsp;&nbsp;&nbsp;</span>
+								<span class="input-group-btn">
+									<button class="btn btn-default" type="submit"  onclick="this.innerHTML='Waiting';this.disabled=true;form.submit();" <#if !betting_enabled??>disabled="disabled"</#if>>Win/下注</button>
+								</span>
+							</div>
+						</div>
+
+				</form>
+				</#if>
 		</div>
 		<div class="row section"> 
 			<ul>
-			<li><strong>Current  round:</strong> Block[<a href='https://blockchain.info/block-index/${betting_start_block}/'>${betting_start_block} </a> - ${betting_end_block}]  ${betting_status}</li>
-			<li><strong>Previous round:</strong> Block[${prev_bet_start_block} - ${prev_bet_end_block}] ${prev_bet_status}</li>
+			<li><strong>Betting period/有效下注时间:</strong> ${betting_start_time} -> ${betting_end_time}</li>
+			<li><strong>Resolve scheme time/竞猜开奖时间:</strong> ${resolve_scheme_time}</li>
+			<li><strong>Status/游戏状态:</strong> ${betting_status}</li>
 			</ul>
 		</div>
 		<div class="row section padding-top">
 		    <ul id="tabs" class="nav nav-tabs" data-tabs="tabs">
-		        <li class="active"><a href="#recent_bets" data-toggle="tab">${LANG_RECENT_BETS}</a></li>
+		        <li class="active"><a href="#recent_bets" data-toggle="tab">Recent bets/最新下注</a></li>
 						<#if my_bets??>
-						<li><a href="#my_bets" data-toggle="tab">My bets</a></li>
+						<li><a href="#my_bets" data-toggle="tab">My bets/我的下注</a></li>
 						</#if>
-		        <li><a href="#leaderboard" data-toggle="tab">Leaderboard</a></li>
-                <li><a href="#house_info" data-toggle="tab">House info</a></li>
+		        <li><a href="#leaderboard" data-toggle="tab">Leaderboard/排行榜</a></li>
+				<li><a href="#teamstat" data-toggle="tab">Teams statistics/各队统计</a></li>
+                <li><a href="#house_info" data-toggle="tab">House info/游戏信息</a></li>
 		    </ul>
 
 		    <div id="my-tab-content" class="tab-content">
 		        <div class="tab-pane active" id="recent_bets">
-								<h2>${LANG_RECENT_BETS}</h2>
+								<h2>Recent bets/最新下注</h2>
 
 								<table class="table table-striped">
 										<thead>
-											<tr>
-                                                <th>${LANG_BLOCK}</th>
-                                                <th>${LANG_TIME}</th>
-                                                <th>${LANG_SOURCE_ADDRESS}</th>
-                                                <th>${LANG_BET_SIZE}</th>
-                                                <th>${LANG_BIGGER_OR_SMALLER}</th>
-                                                <th>${LANG_ROLL}</th>
-                                                <th>${LANG_PROFIT}</th>
-											</tr>
+												<tr>
+                                                        <th>Block</th>
+														<th>Time</th>
+														<th>Source address</th>
+														<th>Bet size</th>
+														<th>Bet Champion&Second</th>
+														<th>Profit</th>
+												</tr>
 										</thead>
 
 										<tbody>
@@ -71,12 +116,11 @@
 											<#list my_bets_pending as bet>
 													<tr>
                                                             <td><a   href="https://blockchain.info/block-index/${bet["block_index"]}/">${bet["block_index"]}</a></td>
-															<td>${LANG_PENDING}</td>
+															<td>Pending</td>
 															<td><a href="/wallet?address=${bet["source"]}">${bet["source"]}</a></td>
 															<td>${bet["bet"]} NEWB</td>
-															<td><#if bet["bet_bs"]==1>${LANG_BIGGER}<#else>${LANG_SMALLER}</#if></td>
-															<td>${LANG_PENDING}</td>
-															<td>?</td>
+															<td>${bet["bet_set"]}</td>
+															<td>Pending</td>
 													</tr>
 											</#list>
 											</#if>
@@ -86,9 +130,8 @@
 															<td>${bet["block_time"]}</td>
 															<td><a href="/wallet?address=${bet["source"]}">${bet["source"]}</a></td>
 															<td>${bet["bet"]} NEWB</td>
-															<td><#if bet["bet_bs"]==1>${LANG_BIGGER}<#else>${LANG_SMALLER}</#if></td>
-															<td><#if bet["resolved"]??><#if bet["roll"]==1>${LANG_BIGGER}<#else>${LANG_SMALLER}</#if><#else>?</#if></td>
-															<td><#if bet["resolved"]?? && bet["resolved"]="true">${bet["profit"]} NEWB<#else>${LANG_UNRESOLVED}</#if></td>
+															<td>${bet["bet_set"]}</td>
+															<td><#if bet["resolved"]?? && bet["resolved"]="true">${bet["profit"]} NEWB<#else>Unresolved</#if></td>
 													</tr>
 											</#list>
 										</tbody>
@@ -97,8 +140,8 @@
 						</div>
 
 						<#if my_bets??>
-		        <div class="tab-pane" id="my_bets">
-								<h2>My bets</h2>
+						<div class="tab-pane" id="my_bets">
+								<h2>My bets/我的下注</h2>
 								<table class="table table-striped">
 										<thead>
 												<tr>
@@ -106,8 +149,7 @@
 														<th>Time</th>
 														<th>Source address</th>
 														<th>Bet size</th>
-														<th>Bigger or Smaller</th>
-														<th>Roll</th>
+														<th>Bet Champion&Second</th>
 														<th>Profit</th>
 												</tr>
 										</thead>
@@ -116,12 +158,11 @@
 											<#list my_bets_pending as bet>
 													<tr>
                                                             <td><a   href="https://blockchain.info/block-index/${bet["block_index"]}/">${bet["block_index"]}</a></td>
-															<td>${bet["block_time"]}</td>
+															<td>Pending</td>
 															<td><a href="/wallet?address=${bet["source"]}">${bet["source"]}</a></td>
 															<td>${bet["bet"]} NEWB</td>
-															<td><#if bet["bet_bs"]==1>${LANG_BIGGER}<#else>${LANG_SMALLER}</#if></td>
-															<td>${LANG_PENDING}</td>
-															<td>?</td>
+															<td>${bet["bet_set"]}</td>
+															<td>Pending</td>
 													</tr>
 											</#list>
 											</#if>
@@ -131,8 +172,7 @@
 															<td>${bet["block_time"]}</td>
 															<td><a href="/wallet?address=${bet["source"]}">${bet["source"]}</a></td>
 															<td>${bet["bet"]} NEWB</td>
-															<td><#if bet["bet_bs"]==1>${LANG_BIGGER}<#else>${LANG_SMALLER}</#if></td>
-															<td><#if bet["resolved"]??><#if bet["roll"]==1>${LANG_BIGGER}<#else>${LANG_SMALLER}</#if><#else>?</#if></td>
+															<td>${bet["bet_set"]}</td>
 															<td><#if bet["resolved"]?? && bet["resolved"]="true">${bet["profit"]} NEWB<#else>Unresolved</#if></td>
 													</tr>
 											</#list>
@@ -142,7 +182,7 @@
 						</#if>
 
 		        <div class="tab-pane" id="leaderboard">
-								<h2>Biggest winners</h2>
+								<h2>Biggest winners/赢家排行</h2>
 								<table class="table table-striped">
 										<thead>
 												<tr>
@@ -152,6 +192,7 @@
 														<th>Total profit</th>
 												</tr>
 										</thead>
+										<tbody>
 										<#list winners as winner>
 												<tr>
 														<td><a href="/wallet?address=${winner["source"]}">${winner["source"]}</a></td>
@@ -160,12 +201,10 @@
 														<td>${winner["sum_profit"]} NEWB</td>
 												</tr>
 										</#list>
-										<tbody>
-
 										</tbody>
 								</table>
 
-								<h2>High rollers</h2>
+								<h2>High rollers/玩家排行</h2>
 								<table class="table table-striped">
 										<thead>
 												<tr>
@@ -175,6 +214,7 @@
 														<th>Total profit</th>
 												</tr>
 										</thead>
+										<tbody>
 										<#list high_rollers as high_roller>
 												<tr>
 														<td><a href="/wallet?address=${high_roller["source"]}">${high_roller["source"]}</a></td>
@@ -183,12 +223,10 @@
 														<td>${high_roller["sum_profit"]} NEWB</td>
 												</tr>
 										</#list>
-										<tbody>
-
 										</tbody>
 								</table>
 
-								<h2>Largest bets</h2>
+								<h2>Largest bets/下注排行</h2>
 								<table class="table table-striped">
 										<thead>
 											<tr>
@@ -196,28 +234,52 @@
 													<th>Time</th>
 													<th>Source address</th>
 													<th>Bet size</th>
-													<th>Roll</th>
+													<th>Bet Champion&Second</th>
 													<th>Profit</th>
 											</tr>
 										</thead>
+										<tbody>
 										<#list largest_bets as largest_bet>
 											<tr>
                                                     <td><a   href="https://blockchain.info/block-index/${largest_bet["block_index"]}/">${largest_bet["block_index"]}</a></td>
 													<td>${largest_bet["block_time"]}</td>
 													<td><a href="/wallet?address=${largest_bet["source"]}">${largest_bet["source"]}</a></td>
 													<td>${largest_bet["bet"]} NEWB</td>
-													<td><#if largest_bet["resolved"]??><#if largest_bet["roll"]==1>${LANG_BIGGER}<#else>${LANG_SMALLER}</#if><#else>?</#if></td>
+													<td>${largest_bet["bet_set"]}</td>
 													<td><#if largest_bet["resolved"]?? && largest_bet["resolved"]="true">${largest_bet["profit"]} NEWB<#else>Unresolved</#if></td>
 											</tr>
 										</#list>
-										<tbody>
-
 										</tbody>
 								</table>
 
 		        </div>
+				<div class="tab-pane" id="teamstat">
+					<h2>Teams statistics/各队统计</h2>
+					<table class="table table-striped">
+							<thead>
+									<tr>
+											<th>Champion & Second</th>
+											<th>Bet times</th>
+											<th>Total bet size</th>
+											<th>Average bet size</th>
+											<th>Total profit</th>
+									</tr>
+							</thead>
+							<tbody>
+							<#list teams as team_bet>
+									<tr>
+											<td>${team_bet["bet_set"]}</td>
+											<td>${team_bet["bet_count"]}</td>
+											<td>${team_bet["sum_bet"]} NEWB</td>
+											<td>${team_bet["avg_bet"]} NEWB</td>
+											<td>${team_bet["sum_profit"]} NEWB</td>
+									</tr>
+							</#list>
+							</tbody>
+					</table>
+		        </div>
 						<div class="tab-pane" id="house_info">
-								<h2>House info</h2>
+								<h2>House info/游戏开放信息</h2>
 								<table class="table table-striped">
 										<thead>
 												<tr>

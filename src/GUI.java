@@ -42,10 +42,19 @@ public class GUI extends Application {
 	private static final int SPLASH_WIDTH = 200;
 	private static final int SPLASH_HEIGHT = 200;
 
-	public static void main(String[] args) throws Exception { launch(args); }
+	public static void main(String[] args) throws Exception { 
+        launch(args); 
+    }
 
 	@Override public void init() {
 		Locale.setDefault(new Locale("en", "US"));
+        
+        String strLang = System.getProperty("lang");
+        if(strLang!=null){
+            Language.setLang(strLang);
+            System.out.println(Language.getLangLabel("Newbiecoin"));
+        }
+        
 		ImageView splash = new ImageView(new Image("file:./resources/static/images/logo.png"));
 		loadProgress = new ProgressBar();
 		loadProgress.setPrefWidth(SPLASH_WIDTH);
@@ -60,7 +69,7 @@ public class GUI extends Application {
 	@Override public void start(final Stage initStage) throws Exception {
 		final Task preloaderTask = new Task() {
 			@Override protected Object call() throws InterruptedException {
-				updateMessage("Loading "+Config.appName);
+				updateMessage(Language.getLangLabel("Loading")+" "+Config.appName);
 				
 				// start Blocks
 				final Blocks blocks = Blocks.getInstanceFresh();
@@ -72,9 +81,9 @@ public class GUI extends Application {
 								|| lastParsedBlock<blocks.bitcoinBlock ) {
 							if (blocks.newbiecoinBlock > 0) {
 								if( blocks.newbiecoinBlock < blocks.bitcoinBlock )
-									updateMessage("Block " + blocks.newbiecoinBlock + "/" + blocks.bitcoinBlock);
+									updateMessage(Language.getLangLabel("Getting block")+" " + blocks.newbiecoinBlock + "/" + blocks.bitcoinBlock);
 								else
-									updateMessage("Parsing " + blocks.newbiecoinBlock + "/" + blocks.bitcoinBlock);
+									updateMessage(Language.getLangLabel("Parsing")+" " + blocks.newbiecoinBlock + "/" + blocks.bitcoinBlock);
 							} else {
 								updateMessage(blocks.statusMessage);		
 							}
@@ -115,7 +124,7 @@ public class GUI extends Application {
 	private void showMainStage() {
 		// create the scene
 		mainStage = new Stage(StageStyle.DECORATED);
-		mainStage.setTitle("Newbiecoin");
+		mainStage.setTitle(Language.getLangLabel("Newbiecoin"));
 		mainStage.getIcons().add(new Image("file:./resources/static/images/logo.png"));
 		mainStage.setIconified(false);
 		Browser browser=new Browser();
@@ -185,7 +194,7 @@ class Browser extends Region {
 	}
 	
 	private Button createHomeButton() {
-		Button buttonHome = new Button(Config.appName+" wallet V"+Config.version);    
+		Button buttonHome = new Button(Language.getLangLabel(Config.appName)+" "+Language.getLangLabel("wallet")+" V"+Config.version);    
 
 		buttonHome.setOnMouseClicked(new EventHandler<MouseEvent>() {
 			@Override

@@ -12,6 +12,7 @@ public class Config {
 	public static String minVersion="2.0";
 	public static String dbPath = "resources/db/";
 	public static String newsUrl = "http://newbiecoin.org/downloads/news.html";
+    public static String newsUrlCN = "http://newbiecoin.org/downloads/news_cn.html";
 	public static String downloadUrl = "http://newbiecoin.org/downloads/";
 	public static String downloadZipUrl = "http://newbiecoin.org/download.txt"; //Only update package
 	public static Integer RPCPort = 44944;
@@ -21,7 +22,7 @@ public class Config {
 	
 	//version
 	public static Integer majorVersion = 2;
-	public static Integer minorVersion = 4;
+	public static Integer minorVersion = 5;
 	public static String version = Integer.toString(majorVersion)+"."+Integer.toString(minorVersion);
 	public static Integer majorVersionDB = 1;
 	public static Integer minorVersionDB = 2;
@@ -81,10 +82,10 @@ public class Config {
 	public static String nbc_display_format = "%.2f";
 	
 	//bitcoin
-	public static Integer dustSize = 5430*2;
+	public static Integer dustSize = 780;
 	public static Integer minOrderMatchBTC = 100000;
-	public static Integer minFee = 10000;
-	public static Integer crowdfundingFee = 20000;
+	public static Integer minFee = 3000;
+	public static Integer maxFee = 10000;
 	public static Integer dataValue = 0;
 	
 	//etc.

@@ -6,6 +6,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.FileInputStream;
 import java.io.OutputStream;
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -555,22 +556,22 @@ public class Util {
 		String   aboutLeftTimeDesc="";
 		Integer  aboutDays=new Double(java.lang.Math.floor(leftSeconds.doubleValue()/new Double(60*60*24).doubleValue())).intValue();
 		if(aboutDays>0)
-			aboutLeftTimeDesc=aboutDays.toString() + " days";
+			aboutLeftTimeDesc=aboutDays.toString() + " " + Language.getLangLabel("days");
 		
 		leftSeconds=leftSeconds%(60*60*24);
 		Integer  aboutHours=new Double( java.lang.Math.floor(leftSeconds.doubleValue() /new Double(60*60).doubleValue())).intValue();
 		if(aboutHours>0)
-			aboutLeftTimeDesc=aboutLeftTimeDesc+" "+aboutHours.toString() + " hours";
+			aboutLeftTimeDesc=aboutLeftTimeDesc+" "+aboutHours.toString() + " " + Language.getLangLabel("hours");
 		else {
 			leftSeconds=leftSeconds%(60*60);
 			
 			Integer  aboutMins=new Double( java.lang.Math.floor(leftSeconds.doubleValue() /new Double(60).doubleValue())).intValue();
 			if(aboutMins>0)
-				aboutLeftTimeDesc=aboutLeftTimeDesc+" "+aboutMins.toString() + " Minutes";
+				aboutLeftTimeDesc=aboutLeftTimeDesc+" "+aboutMins.toString() + " " + Language.getLangLabel("minutes");
 		}
 		
 		if(aboutLeftTimeDesc.equals(""))
-			aboutLeftTimeDesc=" < 1 Minute";
+			aboutLeftTimeDesc=" < 1 "+Language.getLangLabel("minute");
 		
 		return aboutLeftTimeDesc;//+" (DEBUG: now="+nowtime.getTimeInMillis()+"  dest="+strtodate.getTime()+")  ";
 	}
@@ -596,7 +597,7 @@ public class Util {
 		String   aboutLeftTimeDesc="";
 		Integer  aboutDays=new Double(java.lang.Math.floor(leftMillis.doubleValue()/new Double(1000*60*60*24).doubleValue())).intValue();
 		if(aboutDays>0)
-			aboutLeftTimeDesc=aboutDays.toString() + " days";
+			aboutLeftTimeDesc=aboutDays.toString() + " " + Language.getLangLabel("days");
 		
 		leftMillis=leftMillis%(1000*60*60*24);
 		Integer  aboutHours=new Double( java.lang.Math.floor(leftMillis.doubleValue() /new Double(1000*60*60).doubleValue())).intValue();
@@ -648,23 +649,28 @@ public class Util {
 	}
 	
 	public static String readTextFile(String fileName){  
-		try {
-			BufferedReader br=new BufferedReader(new FileReader(fileName));
-			String str="";
-			String r=br.readLine();
-			while(r!=null){
-				str+=r;
-				r=br.readLine();
-			}
-			return str;
-		}catch(Exception e){
+		return readTextFile(fileName,"ISO-8859-1");
+	} 
+    
+    public static String readTextFile(String fileName,String encode){  
+        try {
+            InputStreamReader read = new InputStreamReader (new FileInputStream(fileName),encode);
+            BufferedReader reader=new BufferedReader(read);
+            String str="";
+            String line;
+            while ((line = reader.readLine()) != null) {
+                str+=line;
+            }
+            reader.close();
+            read.close();
+            return str;
+        }catch(Exception e){
 			logger.error(e.toString());
 			return null;
 		}
-	} 
+    }
 	
-	
-	public static JSONObject getRSAKeys(String address,boolean auto_generate) throws Exception{  
+    public static JSONObject getRSAKeys(String address,boolean auto_generate) throws Exception{  
 		String  privateKeyFilename="resources/db/ck-"+address;
 					
 		if (!(new File(privateKeyFilename)).exists() ){

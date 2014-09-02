@@ -238,7 +238,7 @@ public class CrowdfundingProject {
 	public static JSONObject updateProjectStat(String project_tx_index_or_hash) {
 		Database db = Database.getInstance();
 		
-		ResultSet rs = db.executeQuery("select count(*) as backers,sum(back_price_nbc) as nbc_funded  from crowdfunding_projects cp,crowdfunding_backers bk where (cp.tx_index='"+project_tx_index_or_hash+"' or cp.tx_hash='"+project_tx_index_or_hash+"') and cp.validity='valid' and cp.tx_index=bk.project_tx_index and bk.validity='valid';");
+		ResultSet rs = db.executeQuery("select count(*) as backers,sum(back_price_nbc) as nbc_funded  from crowdfunding_projects cp,crowdfunding_backers bk where (cp.tx_index='"+project_tx_index_or_hash+"' or cp.tx_hash='"+project_tx_index_or_hash+"') and (cp.validity='valid' or cp.validity='success' or cp.validity='failed') and cp.tx_index=bk.project_tx_index and bk.validity='valid';");
 
 		JSONObject  projectStat=new JSONObject();
 		try {
@@ -311,7 +311,7 @@ public class CrowdfundingProject {
 		} catch (UnsupportedEncodingException e) {
 		}
 
-		Transaction tx = blocks.transaction(owner, "", BigInteger.ZERO, BigInteger.valueOf(Config.crowdfundingFee), dataString);
+		Transaction tx = blocks.transaction(owner, "", BigInteger.ZERO, BigInteger.valueOf(Config.maxFee), dataString);
 
 		//just for debug
 		//logger.info("Test:createProject owner="+owner+", dataString.length="+dataString.length()+" dataString="+dataString);

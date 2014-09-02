@@ -3,17 +3,17 @@
 		<div class="row section">
 			<table border="0" width="100%">
 			<tr>
-				<td><h2>Crowdfunding</h2></td>
-				<td align="right"><a class="btn btn-primary btn-lg" role="button" href="/crowdfunding-add">Create a new project...</a></td>
+				<td><h2>${LANG_CROWDFUNDING}</h2></td>
+				<td align="right"><a class="btn btn-primary btn-lg" role="button" href="/crowdfunding-add">${LANG_CREATE_NEW_PROJECT}...</a></td>
 			</tr>
 			</table>
 		</div>
 		<div class="row section padding-top">
 		    <ul id="tabs" class="nav nav-tabs" data-tabs="tabs">
-		        <li class="active"><a href="#newest_project" data-toggle="tab">The newest!</a></li>
-				<li><a href="#recent_projects" data-toggle="tab">Recent projects</a></li>
-				<li><a href="#my_projects" data-toggle="tab">My projects</a></li>
-				<li><a href="#my_backs" data-toggle="tab">My backs</a></li>
+		        <li class="active"><a href="#newest_project" data-toggle="tab">${LANG_THE_NEWEST!}</a></li>
+				<li><a href="#recent_projects" data-toggle="tab">${LANG_RECENT_PROJECTS}</a></li>
+				<li><a href="#my_projects" data-toggle="tab">${LANG_MY_PROJECTS}</a></li>
+				<li><a href="#my_backs" data-toggle="tab">${LANG_MY_BACKS}</a></li>
 				<!--<li><a href="#project_stat" data-toggle="tab">Crownfunding statistics</a></li>-->
 		    </ul>
 
@@ -32,47 +32,47 @@
 						<tr>
 							<#if recommand_project["validity"]="valid">
 								<#if recommand_project["left_time_desc"]??>
-									<td colspan="2">Left ${recommand_project["left_time_desc"]} </td>
+									<td colspan="2">${LANG_LEFT} ${recommand_project["left_time_desc"]} </td>
 									<td align="right">
-									<a class="btn btn-success btn-lg" role="button" href='/crowdfunding-detail?project_tx_index=${recommand_project["tx_index"]}'>View</a>
+									<a class="btn btn-success btn-lg" role="button" href='/crowdfunding-detail?project_tx_index=${recommand_project["tx_index"]}'>${LANG_VIEW}</a>
 									</td>
 								<#else>
-									<td colspan="2"> project expired and pending resolved. </td>
+									<td colspan="2"> ${LANG_PROJECT_EXPIRED} </td>
 									<td align="right">
-									<a class="btn btn-info btn-lg" role="button" href='/crowdfunding-detail?project_tx_index=${recommand_project["tx_index"]}'>View</a>
+									<a class="btn btn-info btn-lg" role="button" href='/crowdfunding-detail?project_tx_index=${recommand_project["tx_index"]}'>${LANG_VIEW}</a>
 									</td>
 								</#if>
 							<#elseif recommand_project["validity"]="success">
-							<td colspan="2">Successfully funded!</td>
+							<td colspan="2">${LANG_SUCCESSFULLY_FUNDED}</td>
 							<td align="right">
-							<a class="btn btn-info btn-lg" role="button" href='/crowdfunding-detail?project_tx_index=${recommand_project["tx_index"]}'>View</a>
+							<a class="btn btn-info btn-lg" role="button" href='/crowdfunding-detail?project_tx_index=${recommand_project["tx_index"]}'>${LANG_VIEW}</a>
 							</td>
 							<#elseif recommand_project["validity"]="failed">
-							<td colspan="2">Failed!</td>
+							<td colspan="2">${LANG_FAILED}!</td>
 							<td align="right">
-							<a class="btn btn-danger btn-lg" role="button" href='/crowdfunding-detail?project_tx_index=${recommand_project["tx_index"]}'>View</a>
+							<a class="btn btn-danger btn-lg" role="button" href='/crowdfunding-detail?project_tx_index=${recommand_project["tx_index"]}'>${LANG_VIEW}</a>
 							</td>
 							<#else>
-							<td colspan="2">Canceled</td>
+							<td colspan="2">${LANG_CANCELED}</td>
 							<td align="right">
-							<a class="btn btn-warning btn-lg" role="button" href='/crowdfunding-detail?project_tx_index=${recommand_project["tx_index"]}'>View</a>
+							<a class="btn btn-warning btn-lg" role="button" href='/crowdfunding-detail?project_tx_index=${recommand_project["tx_index"]}'>${LANG_VIEW}</a>
 							</td>
 							</#if>
 						</tr>
 						<tr>
 							<td colspan="3">
-							Total ${recommand_project["nbc_funded"]} NEWB  ( ${recommand_project["percent"]}% of ${recommand_project["min_fund"]} NEWB)
+							${LANG_TOTAL} ${recommand_project["nbc_funded"]} NEWB  ( ${recommand_project["percent"]}% ${LANG_OF} ${recommand_project["min_fund"]} NEWB)
 							</td>
 						</tr>
 						<tr>
 							<td></td>
 							<td></td>
-							<td>${recommand_project["backers"]} backers</td>
+							<td>${recommand_project["backers"]} ${LANG_BACKERS}</td>
 						</tr>
 						</tbody>
 						</table>
-						<p>Project by: <a href='/wallet?address=${recommand_project["owner"]}'>${recommand_project["name"]}</a></p>
-						<p>Created time: <a href='https://blockchain.info/block-index/${recommand_project["block_index"]}/'>${recommand_project["block_time"]}</a></p>
+						<p>${LANG_PROJECT_BY}: <a href='/wallet?address=${recommand_project["owner"]}'>${recommand_project["name"]}</a></p>
+						<p>${LANG_CREATED_TIME}: <a href='https://blockchain.info/block-index/${recommand_project["block_index"]}/'>${recommand_project["block_time"]}</a></p>
 					</td>
 					</tr>
 					</tbody>
@@ -83,14 +83,14 @@
 					<table class="table table-striped">
 						<thead>
 							<tr>
-								<th>Logo</th>
-								<th>Block</th>
-								<th>Time</th>
-								<th>Title</th>
-								<th>Owner</th>
-								<th>Backers</th>
-								<th>Funded</th>
-								<th>Status</th>
+								<th>${LANG_LOGO}</th>
+								<th>${LANG_BLOCK}</th>
+								<th>${LANG_TIME}</th>
+								<th>${LANG_TITLE}</th>
+								<th>${LANG_OWNER}</th>
+								<th>${LANG_BACKERS}</th>
+								<th>${LANG_FUNDED}</th>
+								<th>${LANG_STATUS}</th>
 							</tr>
 						</thead>
 
@@ -99,15 +99,15 @@
 							<#list my_pending_projects as project>
 								<tr>
 									<td><img src='${project["logo_img_url"]}' width="100" height="100" ></td>
-									<td>Pending</td>
-									<td>Pending</td>
+									<td>${LANG_PENDING}</td>
+									<td>${LANG_PENDING}</td>
 									<td>${project["title"]}</td>
 									<td><a href="/wallet?address=${project["owner"]}">${project["name"]}</a></td>
 									<td>${project["backers"]}</td>
-									<td>${project["nbc_funded"]} NEWB<br> ( ${project["percent"]}% of ${project["min_fund"]} NEWB)</td>
-									<td>Pending<!--
+									<td>${project["nbc_funded"]} NEWB<br> ( ${project["percent"]}% ${LANG_OF} ${project["min_fund"]} NEWB)</td>
+									<td>${LANG_PENDING}<!--
 										<p align="center">
-										<a class="btn btn-primary btn-lg" role="button" href='/crowdfunding-detail?project_tx_index=${project["tx_index"]}'>View</a>
+										<a class="btn btn-primary btn-lg" role="button" href='/crowdfunding-detail?project_tx_index=${project["tx_index"]}'>${LANG_VIEW}</a>
 										</p>-->
 									</td>
 								</tr>
@@ -123,33 +123,33 @@
 									<td>${project["title"]}</td>
 									<td><a href="/wallet?address=${project["owner"]}">${project["name"]}</a></td>
 									<td>${project["backers"]}</td>
-									<td>${project["nbc_funded"]} NEWB<br> ( ${project["percent"]}% of ${project["min_fund"]} NEWB)</td>
+									<td>${project["nbc_funded"]} NEWB<br> ( ${project["percent"]}% ${LANG_OF} ${project["min_fund"]} NEWB)</td>
 									<td>
 										<#if project["validity"]="valid">
 											<#if project["left_time_desc"]??>
 												Left ${project["left_time_desc"]}
-												<p align="center"><a class="btn btn-success btn-lg" role="button" href='/crowdfunding-detail?project_tx_index=${project["tx_index"]}'>View</a>
+												<p align="center"><a class="btn btn-success btn-lg" role="button" href='/crowdfunding-detail?project_tx_index=${project["tx_index"]}'>${LANG_VIEW}</a>
 												</p>
 											<#else>
-												project expired and pending resolved. 
+												${LANG_PROJECT_EXPIRED} 
 												<p align="center">
-												<a class="btn btn-info btn-lg" role="button" href='/crowdfunding-detail?project_tx_index=${project["tx_index"]}'>View</a>
+												<a class="btn btn-info btn-lg" role="button" href='/crowdfunding-detail?project_tx_index=${project["tx_index"]}'>${LANG_VIEW}</a>
 												</p>
 											</#if>
 										<#elseif project["validity"]="success">
-											Successfully funded!
+											${LANG_SUCCESSFULLY_FUNDED}
 											<p align="center">
-											<a class="btn btn-info btn-lg" role="button" href='/crowdfunding-detail?project_tx_index=${project["tx_index"]}'>View</a>
+											<a class="btn btn-info btn-lg" role="button" href='/crowdfunding-detail?project_tx_index=${project["tx_index"]}'>${LANG_VIEW}</a>
 											</p>
 										<#elseif project["validity"]="failed">
-											Failed!
+											${LANG_FAILED}!
 											<p align="center">
-											<a class="btn btn-danger btn-lg" role="button" href='/crowdfunding-detail?project_tx_index=${project["tx_index"]}'>View</a>
+											<a class="btn btn-danger btn-lg" role="button" href='/crowdfunding-detail?project_tx_index=${project["tx_index"]}'>${LANG_VIEW}</a>
 											</p>
 										<#else>
-											Canceled
+											${LANG_CANCELED}
 											<p align="center">
-											<a class="btn btn-warning btn-lg" role="button" href='/crowdfunding-detail?project_tx_index=${project["tx_index"]}'>View</a>
+											<a class="btn btn-warning btn-lg" role="button" href='/crowdfunding-detail?project_tx_index=${project["tx_index"]}'>${LANG_VIEW}</a>
 											</p>
 										</#if>
 									</td>
@@ -164,14 +164,14 @@
 					<table class="table table-striped">
 					<thead>
 						<tr>
-							<th>Logo</th>
-							<th>Block</th>
-							<th>Time</th>
-							<th>Title</th>
-							<th>Owner</th>
-							<th>Backers</th>
-							<th>Funded</th>
-							<th>Status</th>
+							<th>${LANG_LOGO}</th>
+                            <th>${LANG_BLOCK}</th>
+                            <th>${LANG_TIME}</th>
+                            <th>${LANG_TITLE}</th>
+                            <th>${LANG_OWNER}</th>
+                            <th>${LANG_BACKERS}</th>
+                            <th>${LANG_FUNDED}</th>
+                            <th>${LANG_STATUS}</th>
 						</tr>
 					</thead>
 
@@ -180,15 +180,15 @@
 						<#list my_pending_projects as project>
 							<tr>
 								<td><img src='${project["logo_img_url"]}' width="100" height="100" ></td>
-								<td>Pending</td>
-								<td>Pending</td>
+								<td>${LANG_PENDING}</td>
+								<td>${LANG_PENDING}</td>
 								<td>${project["title"]}</td>
 								<td><a href="/wallet?address=${project["owner"]}">${project["name"]}</a></td>
 								<td>${project["backers"]}</td>
-								<td>${project["nbc_funded"]} NEWB<br> ( ${project["percent"]}% of ${project["min_fund"]} NEWB)</td>
-								<td>Pending<!--
+								<td>${project["nbc_funded"]} NEWB<br> ( ${project["percent"]}% ${LANG_OF} ${project["min_fund"]} NEWB)</td>
+								<td>${LANG_PENDING}<!--
 									<p align="center">
-									<a class="btn btn-primary btn-lg" role="button" href='/crowdfunding-detail?project_tx_index=${project["tx_index"]}'>View</a>
+									<a class="btn btn-primary btn-lg" role="button" href='/crowdfunding-detail?project_tx_index=${project["tx_index"]}'>${LANG_VIEW}</a>
 									</p>-->
 								</td>
 							</tr>
@@ -204,33 +204,33 @@
 								<td>${project["title"]}</td>
 								<td><a href="/wallet?address=${project["owner"]}">${project["name"]}</a></td>
 								<td>${project["backers"]}</td>
-								<td>${project["nbc_funded"]} NEWB<br> ( ${project["percent"]}% of ${project["min_fund"]} NEWB)</td>
+								<td>${project["nbc_funded"]} NEWB<br> ( ${project["percent"]}% ${LANG_OF} ${project["min_fund"]} NEWB)</td>
 								<td>
 									<#if project["validity"]="valid">
 										<#if project["left_time_desc"]??>
 											Left ${project["left_time_desc"]}
-											<p align="center"><a class="btn btn-success btn-lg" role="button" href='/crowdfunding-detail?project_tx_index=${project["tx_index"]}'>View</a>
+											<p align="center"><a class="btn btn-success btn-lg" role="button" href='/crowdfunding-detail?project_tx_index=${project["tx_index"]}'>${LANG_VIEW}</a>
 											</p>
 										<#else>
-											project expired and pending resolved. 
+											${LANG_PROJECT_EXPIRED} 
 											<p align="center">
-											<a class="btn btn-info btn-lg" role="button" href='/crowdfunding-detail?project_tx_index=${project["tx_index"]}'>View</a>
+											<a class="btn btn-info btn-lg" role="button" href='/crowdfunding-detail?project_tx_index=${project["tx_index"]}'>${LANG_VIEW}</a>
 											</p>
 										</#if>
 									<#elseif project["validity"]="success">
-										Successfully funded!
+										${LANG_SUCCESSFULLY_FUNDED}
 										<p align="center">
-										<a class="btn btn-info btn-lg" role="button" href='/crowdfunding-detail?project_tx_index=${project["tx_index"]}'>View</a>
+										<a class="btn btn-info btn-lg" role="button" href='/crowdfunding-detail?project_tx_index=${project["tx_index"]}'>${LANG_VIEW}</a>
 										</p>
 									<#elseif project["validity"]="failed">
-										Failed!
+										${LANG_FAILED}!
 										<p align="center">
-										<a class="btn btn-danger btn-lg" role="button" href='/crowdfunding-detail?project_tx_index=${project["tx_index"]}'>View</a>
+										<a class="btn btn-danger btn-lg" role="button" href='/crowdfunding-detail?project_tx_index=${project["tx_index"]}'>${LANG_VIEW}</a>
 										</p>
 									<#else>
-										Canceled
+										${LANG_CANCELED}
 										<p align="center">
-										<a class="btn btn-warning btn-lg" role="button" href='/crowdfunding-detail?project_tx_index=${project["tx_index"]}'>View</a>
+										<a class="btn btn-warning btn-lg" role="button" href='/crowdfunding-detail?project_tx_index=${project["tx_index"]}'>${LANG_VIEW}</a>
 										</p>
 									</#if>
 								</td>
@@ -245,12 +245,12 @@
 					<table class="table table-striped">
 						<thead>
 							<tr>
-								<th>Project</th>
-								<th>Block</th>
-								<th>Time</th>
-								<th>Backed Item</th>
-								<th>Backer</th>
-								<th>Status</th>
+								<th>${LANG_PROJECT}</th>
+								<th>${LANG_BLOCK}</th>
+								<th>${LANG_TIME}</th>
+								<th>${LANG_BACKED_ITEM}</th>
+								<th>${LANG_BACKER}</th>
+								<th>${LANG_STATUS}</th>
 							</tr>
 						</thead>
 
@@ -260,12 +260,12 @@
 								<tr>
 									<td><a href='/crowdfunding-detail?project_tx_index=${back["project_tx_index"]}'><img src='${back["logo_img_url"]}' width="100" height="100" ></a></td>
 									<td><a  href="https://blockchain.info/block-index/${back["block_index"]}/">${project["block_index"]}</a></td>
-									<td>Pending</td>
+									<td>${LANG_PENDING}</td>
 									<td>${project["title"]}</td>
 									<td><a href='/wallet?address=${back["backer"]}'>${back["email"]}</a></td>
-									<td>Pending
+									<td>${LANG_PENDING}
 										<p align="center">
-										<a class="btn btn-primary btn-lg" role="button" href='/crowdfunding-detail?project_tx_index=${project["tx_index"]}'>View</a>
+										<a class="btn btn-primary btn-lg" role="button" href='/crowdfunding-detail?project_tx_index=${project["tx_index"]}'>${LANG_VIEW}</a>
 										</p>
 									</td>
 								</tr>
@@ -278,18 +278,18 @@
 									<td><a href='/crowdfunding-detail?project_tx_index=${back["project_tx_index"]}'><img src='${back["logo_img_url"]}' width="100" height="100" ></a></td>
 									<td><a  href='https://blockchain.info/block-index/${back["block_index"]}/'>${back["block_index"]}</a></td>
 									<td>${back["block_time"]}</td>
-									<td>Pledge ${back["item_price"]} NEWB</strong><br>${back["item_label"]}</td>
+									<td>${LANG_PLEDGE} ${back["item_price"]} NEWB</strong><br>${back["item_label"]}</td>
 									<td><a href='/wallet?address=${back["backer"]}'>${back["email"]}</a></td>
 									<td>
 										<#if back["validity"]=="valid">
 											<#if back["project_validity"]=="valid">
-												valid
+												${LANG_VALID}
 											<#elseif back["project_validity"]=="success">
-												success
+												${LANG_SUCCESS}
 											<#elseif back["project_validity"]=="failed">
-												refunded<br>(project failed)
+												${LANG_REFUNDED}<br>(${LANG_PROJECT_FAILED})
 											<#else>
-												refunded<br>(project canceled)
+												${LANG_REFUNDED}<br>(${LANG_PROJECT_CANCELED})
 											</#if>
 										<#else>
 											${back["validity"]}
@@ -310,7 +310,7 @@
 											<th>Source address</th>
 											<th>Bet times</th>
 											<th>Average project size</th>
-											<th>Total profit</th>
+											<th>${LANG_TOTAL} profit</th>
 									</tr>
 							</thead>
 							<tbody>

@@ -13,33 +13,33 @@
 				<tr>
 					<#if project["validity"]="valid">
 						<#if project["left_time_desc"]??>
-							<td colspan="2">Left ${project["left_time_desc"]} </td>
+							<td colspan="2">${LANG_LEFT} ${project["left_time_desc"]} </td>
 							<td align="right">
 							
 							</td>
 						<#else>
-							<td colspan="2"> project expired and pending resolved. </td>
+							<td colspan="2"> ${LANG_PROJECT_EXPIRED} </td>
 							<td align="right">
 							
 							</td>
 						</#if>
 					<#elseif project["validity"]="success">
-					<td colspan="2">Successfully funded.</td>
+					<td colspan="2">${LANG_SUCCESSFULLY_FUNDED}</td>
 					<td align="right">
 					
 					</td>
 					<#elseif project["validity"]="failed">
-					<td colspan="2">Failed!</td>
+					<td colspan="2">${LANG_FAILED}</td>
 					<td align="right">
 					
 					</td>
 					<#elseif project["validity"]="canceled">
-					<td colspan="2">Canceled!</td>
+					<td colspan="2">${LANG_CANCELED}</td>
 					<td align="right">
 					
 					</td>
 					<#else>
-					<td colspan="2">Invalid!</td>
+					<td colspan="2">${LANG_INVALID}</td>
 					<td align="right">
 					
 					</td>
@@ -47,21 +47,21 @@
 				</tr>
 				<tr>
 					<td colspan="3">
-					Total ${project["nbc_funded"]} NEWB  ( ${project["percent"]}% of ${project["min_fund"]} NEWB)
+					${LANG_TOTAL} ${project["nbc_funded"]} NEWB  ( ${project["percent"]}% ${LANG_OF} ${project["min_fund"]} NEWB)
 					</td>
 				</tr>
 				<tr>
 					<td></td>
 					<td></td>
-					<td><#if project_backs?? ><a href='#recent_backers'>${project["backers"]} backers</a><#else>${project["backers"]} backers</#if></td>
+					<td><#if project_backs?? ><a href='#recent_backers'>${project["backers"]} ${LANG_BACKERS}</a><#else>${project["backers"]} ${LANG_BACKERS}</#if></td>
 				</tr>
 				</tbody>
 				</table>
-				<p>Project by: <a href='/wallet?address=${project["owner"]}'>${project["name"]}</a>
+				<p>${LANG_PROJECT_BY}: <a href='/wallet?address=${project["owner"]}'>${project["name"]}</a>
 				<#if own?? && address==project["owner"] ><!--<br><a class="btn btn-primary" role="button" href='/crowdfunding-back-list?project_tx_index=${project["tx_index"]}'>View all backs</a>  <a class="btn btn-primary btn-danger" role="button" href='/crowdfunding-cancel?project_tx_index=${project["tx_index"]}'>Cancel it!</a>--></#if></p>
-				<p>Email: ${project["email"]}</p>
-				<p>Website: ${project["web"]}</p>
-				<p>Created time: <a href='https://blockchain.info/block-index/${project["block_index"]}/'>${project["block_time"]}</a></p>
+				<p>${LANG_EMAIL}: ${project["email"]}</p>
+				<p>${LANG_WEBSITE}: ${project["web"]}</p>
+				<p>${LANG_CREATED_TIME}: <a href='https://blockchain.info/block-index/${project["block_index"]}/'>${project["block_time"]}</a></p>
 			</td>
 			</tr>
 			</tbody>
@@ -74,8 +74,8 @@
 			<td width="660">
 				<div class="row section padding-top">
 				<ul id="tabs" class="nav nav-tabs" data-tabs="tabs">
-					<li class="active"><a href="#project_detail" data-toggle="tab">Introduction</a></li>
-					<#if project_backs?? ><li><a href="#recent_backers" data-toggle="tab">Recent backers</a></li></#if>
+					<li class="active"><a href="#project_detail" data-toggle="tab">${LANG_INTRODUCTION}</a></li>
+					<#if project_backs?? ><li><a href="#recent_backers" data-toggle="tab">${LANG_RECENT_BACKERS}</a></li></#if>
 				</ul>
 
 				<div id="my-tab-content" class="tab-content">
@@ -88,11 +88,11 @@
 					<table class="table table-striped">
 						<thead>
 							<tr>
-								<th>Block</th>
-								<th>Time</th>
-								<th>Backed Item</th>
-								<th>Backer</th>
-								<th>Status</th>
+								<th>${LANG_BLOCK}</th>
+								<th>${LANG_TIME}</th>
+								<th>${LANG_BACKED_ITEM}</th>
+								<th>${LANG_BACKER}</th>
+								<th>${LANG_STATUS}</th>
 							</tr>
 						</thead>
 
@@ -101,18 +101,18 @@
 								<tr>
 									<td><a  href='https://blockchain.info/block-index/${back["block_index"]}/'>${back["block_index"]}</a></td>
 									<td>${back["block_time"]}</td>
-									<td>Pledge ${back["item_price"]} NEWB</strong></td>
+									<td>${LANG_PLEDGE} ${back["item_price"]} NEWB</strong></td>
 									<td>${back["email"]}<br>(<a href='/wallet?address=${back["backer"]}'>${back["backer"]}</a>)</td>
 									<td>
 										<#if back["validity"]=="valid">
 											<#if project["validity"]=="valid">
-												valid
+												${LANG_VALID}
 											<#elseif project["validity"]=="success">
-												success
+												${LANG_SUCCESS}
 											<#elseif project["validity"]=="failed">
-												refunded<br>(project failed)
+												${LANG_REFUNDED}<br>(${LANG_PROJECT_FAILED})
 											<#else>
-												refunded<br>(project canceled)
+												${LANG_REFUNDED}<br>(${LANG_PROJECT_CANCELED})
 											</#if>
 										<#else>
 											${back["validity"]}
@@ -129,16 +129,16 @@
 			<td width="330">
 				<hr size="1">
 				<#list items as item>
-					<p><strong>Pledge ${item["price"]} NEWB</strong></p>
-					<p>${item["backers"]} backers<br>Limited(${item["left"]} left of ${item["max"]})</p>
+					<p><strong>${LANG_PLEDGE} ${item["price"]} NEWB</strong></p>
+					<p>${item["backers"]} ${LANG_BACKERS}<br>${LANG_LIMITED}(${item["left"]} ${LANG_LEFT_OF} ${item["max"]})</p>
 					<p>${item["label"]}</p>
 					<p align="center">
-					<#if item["back_is_pending"]??>Your back is pending
-					<#elseif item["had_backed"]??>You backed it
+					<#if item["back_is_pending"]??>${LANG_YOUR_BACK_IS_PENDING}
+					<#elseif item["had_backed"]??>${LANG_YOU_BACKED_IT}
 					<#elseif item["left"]<=0>
-					filled
+					${LANG_FILLED}
 					<#elseif own?? && project["validity"]="valid" && project["left_time_desc"]?? >
-						<button class="btn btn-success" type="submit"  onclick="document.getElementById('back_price').value='${item["price"]?string("##0")}';$('#myModal').modal({'backdrop':false,'keyboard':true,'show':true});" >Back it!</button>
+						<button class="btn btn-success" type="submit"  onclick="document.getElementById('back_price').value='${item["price"]?string("##0")}';$('#myModal').modal({'backdrop':false,'keyboard':true,'show':true});" >${LANG_BACK_IT}</button>
 					</#if>
 					</p>
 					<hr size="1">
@@ -159,18 +159,18 @@
 	<input type="hidden" name="back_price" id="back_price" value="">
     <div class="modal-header">
      <a class="close" data-dismiss="modal">X</a>
-     <h3 align="center">Please input your contact here :</h3>
+     <h3 align="center">${LANG_INPUT_YOUR_CONTACT}</h3>
     </div>
     <div class="modal-body">
      <div class="input-group">
-		<span class="input-group-addon">Email:</span>
-		<input type="text" placeholder="Your email" name="backer_email">
+		<span class="input-group-addon">${LANG_EMAIL}:</span>
+		<input type="text" placeholder="${LANG_YOUR_EMAIL}" name="backer_email">
 	</div>
-	<p>While the project reach goal,the creater would contact you by email for more informations such as delivery address if need.</p>
+	<p>${LANG_THE_CREATER_WOULD_CONTACT_YOU}</p>
     </div>
     <div class="modal-footer">
-     <a href="#" class="btn" data-dismiss="modal">Cancel</a>
-	 <button class="btn btn-primary" type="submit"  onclick="this.innerHTML='Waiting';this.disabled=true;form.submit();" >Submit</button>
+     <a href="#" class="btn" data-dismiss="modal">${LANG_CANCEL}</a>
+	 <button class="btn btn-primary" type="submit"  onclick="this.innerHTML='${LANG_CLICKED_WAITING}';this.disabled=true;form.submit();" >${LANG_SUBMIT}</button>
     </div>
     </form>
 	</div>

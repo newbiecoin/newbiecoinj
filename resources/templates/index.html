@@ -4,23 +4,23 @@
 <div class="row section">
 		<a href="/crowdfunding-detail?project_tx_index=137"><img src="/images/t-topic.jpg" style="height: 250px;" class="float_right" /></a>
 		<div class="page-header">
-		  <h1>Newbiecoin <small>a unique coin that focus on decentralized applications such as decentralized crowdfunding,decentralized casino.</small></h1>
+		  <h1>${LANG_NEWBIECOIN} <small>${LANG_A_UNIQUE_COIN}</small></h1>
 		</div>
-		<p>Newbiecoin is a coin and a decentralized platform. It's made for a little joy. <a href="/participate">Download</a> the Newbiecoin software &#8212; including wallet , decentralized crowdfunding, decentralized casino, and decentralized exchange . Start playing today!</p>
-		<p>Coins were created by burning Bitcoins during a creative "Twin-channel Proof of Burn" period.Now there are total ${supply} NEWB.</p>
-		<p>Built on top of the Bitcoin blockchain, Newbiecoin is a platform that is truly decentralized. There is no central point of failure. The owner can't run away with the bankroll. It's owned by the people.</p>
-		<p><a class="btn btn-primary btn-lg" role="button" href="/technical">Learn more</a></p>
+		<p>${LANG_MADE_FOR_A_LITTLE_JOY} ${LANG_SOFTWARE_INCLUDING}</p>
+		<p>${LANG_CREATED_BY_BURNING} ${supply} NEWB.</p>
+		<p>${LANG_BUILT_ON_BITCOIN_BLOCKCHAIN}</p>
+		<p><a class="btn btn-primary btn-lg" role="button" href="/technical">${LANG_LEARN_MORE}</a></p>
 </div>
 <div class="row section">
-<h2>News</h2>
+<h2>${LANG_NEWS}</h2>
 <iframe width="100%" height="50" scrolling="auto" frameborder="no" name="news_content" id="news_content" src="${news_url}"></iframe>
 </div>
 
 <div class="row section">
 <table border="0" width="100%">
 <tr>
-	<td><h2>Crowdfunding</h2></td>
-	<td align="right"><a class="btn btn-primary btn-lg" role="button" href="/crowdfunding-add">Create a new project...</a></td>
+	<td><h2>${LANG_CROWDFUNDING}</h2></td>
+	<td align="right"><a class="btn btn-primary btn-lg" role="button" href="/crowdfunding-add">${LANG_CREATE_NEW_PROJECT}...</a></td>
 </tr>
 </table>
 <#if recommand_project??>
@@ -36,55 +36,56 @@
 	<tr>
 		<#if recommand_project["validity"]="valid">
 			<#if recommand_project["left_time_desc"]??>
-				<td colspan="2">Left ${recommand_project["left_time_desc"]} </td>
+				<td colspan="2">${LANG_LEFT} ${recommand_project["left_time_desc"]} </td>
 				<td align="right">
-				<a class="btn btn-success btn-lg" role="button" href='/crowdfunding-detail?project_tx_index=${recommand_project["tx_index"]}'>View</a>
+				<a class="btn btn-success btn-lg" role="button" href='/crowdfunding-detail?project_tx_index=${recommand_project["tx_index"]}'>${LANG_VIEW}</a>
 				</td>
 			<#else>
-				<td colspan="2"> project expired and pending resolved. </td>
+				<td colspan="2"> ${LANG_PROJECT_EXPIRED}</td>
 				<td align="right">
-				<a class="btn btn-info btn-lg" role="button" href='/crowdfunding-detail?project_tx_index=${recommand_project["tx_index"]}'>View</a>
+				<a class="btn btn-info btn-lg" role="button" href='/crowdfunding-detail?project_tx_index=${recommand_project["tx_index"]}'>${LANG_VIEW}</a>
 				</td>
 			</#if>
 		<#elseif recommand_project["validity"]="success">
-		<td colspan="2">Successfully funded!</td>
+		<td colspan="2">${LANG_SUCCESSFULLY_FUNDED}</td>
 		<td align="right">
-		<a class="btn btn-info btn-lg" role="button" href='/crowdfunding-detail?project_tx_index=${recommand_project["tx_index"]}'>View</a>
+		<a class="btn btn-info btn-lg" role="button" href='/crowdfunding-detail?project_tx_index=${recommand_project["tx_index"]}'>${LANG_VIEW}</a>
 		</td>
 		<#elseif recommand_project["validity"]="failed">
-		<td colspan="2">Failed!</td>
+		<td colspan="2">${LANG_FAILED}</td>
 		<td align="right">
-		<a class="btn btn-danger btn-lg" role="button" href='/crowdfunding-detail?project_tx_index=${recommand_project["tx_index"]}'>View</a>
+		<a class="btn btn-danger btn-lg" role="button" href='/crowdfunding-detail?project_tx_index=${recommand_project["tx_index"]}'>${LANG_VIEW}</a>
 		</td>
 		<#else>
-		<td colspan="2">Canceled</td>
+		<td colspan="2">${LANG_CANCELED}</td>
 		<td align="right">
-		<a class="btn btn-warning btn-lg" role="button" href='/crowdfunding-detail?project_tx_index=${recommand_project["tx_index"]}'>View</a>
+		<a class="btn btn-warning btn-lg" role="button" href='/crowdfunding-detail?project_tx_index=${recommand_project["tx_index"]}'>${LANG_VIEW}</a>
 		</td>
 		</#if>
 	</tr>
 	<tr>
 		<td colspan="3">
-		Total ${recommand_project["nbc_funded"]} NEWB  ( ${recommand_project["percent"]}% of ${recommand_project["min_fund"]} NEWB)
+		${LANG_TOTAL} ${recommand_project["nbc_funded"]} NEWB  ( ${recommand_project["percent"]}% ${LANG_OF} ${recommand_project["min_fund"]} NEWB)
 		</td>
 	</tr>
 	<tr>
 		<td></td>
 		<td></td>
-		<td>${recommand_project["backers"]} backers</td>
+		<td>${recommand_project["backers"]} ${LANG_BACKERS}</td>
 	</tr>
 	</tbody>
 	</table>
-	<p>Project by: <a href='/wallet?address=${recommand_project["owner"]}'>${recommand_project["name"]}</a></p>
-	<p>Created time: <a href='https://blockchain.info/block-index/${recommand_project["block_index"]}/'>${recommand_project["block_time"]}</a></p>
+	<p>${LANG_PROJECT_BY}: <a href='/wallet?address=${recommand_project["owner"]}'>${recommand_project["name"]}</a></p>
+	<p>${LANG_CREATED_TIME}: <a href='https://blockchain.info/block-index/${recommand_project["block_index"]}/'>${recommand_project["block_time"]}</a></p>
 </td>
 </tr>
 </tbody>
 </table>
 </#if>
 </div>
+<!--
 <div class="row section">
-		<h2>Roll dice</h2>
+		<h2>${LANG_ROLL_DICE}</h2>
 		<form action="/casino" class="form-inline" method="post">
 
 				<input type="hidden" name="form" value="bet">
@@ -93,15 +94,15 @@
 			    <div class="form-group">
 					<div class="input-group">
 						<span class="input-group-addon">#</span>
-						<input type="text" placeholder="bet size (NEWB)" name="bet">
+						<input type="text" placeholder="${LANG_BET_SIZE} (NEWB)" name="bet">
 					</div>
 				</div>
 				<div class="form-group">
 					<div class="input-group">
 						<span class="input-group-addon">?</span>
 						<select name="big_or_small">
-						<option value="1">Bigger[5-9]</item>
-						<option value="0">Smaller[0-4]</item>
+						<option value="1">${LANG_BIGGER}[5-9]</item>
+						<option value="0">${LANG_SMALLER}[0-4]</item>
 						</select>
 					</div>
 				</div>
@@ -109,7 +110,7 @@
 					<div class="input-group">
 						<span>&nbsp;&nbsp;&nbsp;&nbsp;</span>
 						<span class="input-group-btn">
-							<button class="btn btn-default" type="submit"  onclick="this.innerHTML='Waiting';this.disabled=true;form.submit();" <#if !own??>disabled="disabled"</#if>>Roll dice</button>
+							<button class="btn btn-default" type="submit"  onclick="this.innerHTML='Waiting';this.disabled=true;form.submit();" <#if !own??>disabled="disabled"</#if>>${LANG_ROLL_DICE}</button>
 						</span>
 					</div>
 				</div>
@@ -118,18 +119,18 @@
 </div>
 <#if bets??>
 <div class="row section">
-		<h2>Recent <a href="/casino">bets</a></h2>
+		<h2><a href="/casino">${LANG_RECENT_BETS}</a></h2>
 		<table class="table table-striped">
 				<thead>
-						<tr>
-                                <th>Block</th>
-								<th>Time</th>
-								<th>Source address</th>
-								<th>Bet size</th>
-								<th>Bigger or Smaller</th>
-								<th>Roll</th>
-								<th>Profit</th>
-						</tr>
+                    <tr>
+                        <th>${LANG_BLOCK}</th>
+                        <th>${LANG_TIME}</th>
+                        <th>${LANG_SOURCE_ADDRESS}</th>
+                        <th>${LANG_BET_SIZE}</th>
+                        <th>${LANG_BIGGER_OR_SMALLER}</th>
+                        <th>${LANG_ROLL}</th>
+                        <th>${LANG_PROFIT}</th>
+                    </tr>
 				</thead>
 
 				<tbody>
@@ -139,13 +140,14 @@
 									<td>${bet["block_time"]}</td>
 									<td><a   href="/wallet?address=${bet["source"]}">${bet["source"]}</a></td>
 									<td>${bet["bet"]} NEWB</td>
-									<td><#if bet["bet_bs"]==1>BIGGER<#else>SMALLER</#if></td>
-									<td><#if bet["resolved"]??><#if bet["roll"]==1>BIGGER<#else>SMALLER</#if><#else>Pending</#if></td>
-									<td><#if bet["resolved"]?? && bet["resolved"]="true">${bet["profit"]} NEWB<#else>Unresolved</#if></td>
+									<td><#if bet["bet_bs"]==1>${LANG_BIGGER}<#else>${LANG_SMALLER}</#if></td>
+									<td><#if bet["resolved"]??><#if bet["roll"]==1>${LANG_BIGGER}<#else>${LANG_SMALLER}</#if><#else>${LANG_PENDING}</#if></td>
+									<td><#if bet["resolved"]?? && bet["resolved"]="true">${bet["profit"]} NEWB<#else>${LANG_UNRESOLVED}</#if></td>
 							</tr>
 					</#list>
 				</tbody>
 		</table>
 </div>
 </#if>
+-->
 </@template.content>

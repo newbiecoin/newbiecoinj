@@ -2,18 +2,18 @@
 <@template.content>
     <div class="row section">
             <div class="col-xs-4 segment one-third">
-                    <h2><#if own??>My<#else>His</#if> balance</h2>
+                    <h2><#if own??>${LANG_MY}<#else>${LANG_HIS}</#if>${LANG_BALANCE}</h2>
                     <ul class="list-group">
                     <p>${address}</p>
                     <#if balanceNBC??>
                     <li class="list-group-item">
-                    <span class="badge">NEWB</span>
+                    <span class="badge">${LANG_NEWB}</span>
                     ${balanceNBC?string(",##0.00")}
                     </li>
                     </#if>
                     <#if balanceBTC?? && own??>
                     <li class="list-group-item">
-                    <span class="badge">BTC</span>
+                    <span class="badge">${LANG_BTC}</span>
 					<a href="/unspents?address=${address}">${balanceBTC?string(",##0.00000000")}</a>
                     </li>
                     </#if>
@@ -30,20 +30,20 @@
                             <div class="input-group">
                                     <input type="hidden" name="form" value="reimport">
                                     <input type="hidden" name="address" value="${address}">
-                                    <button type="submit" class="btn btn-default" onclick="this.innerHTML='Waiting';this.disabled=true;form.submit();">Reimport transactions</button>
+                                    <button type="submit" class="btn btn-default" onclick="this.innerHTML='${LANG_CLICKED_WAITING}';this.disabled=true;form.submit();">Reimport transactions</button>
                             </div>
                     </form> -->
             </div>
             
             <#if own??>
             <div class="col-xs-4 segment one-third">
-                    <h2>Import private key</h2>
+                    <h2>${LANG_IMPORT_PRIVATE_KEY}</h2>
                     <form action="/wallet" method="post">
                             <input type="hidden" name="form" value="import">
 
                             <div class="input-group">
                                 <span class="input-group-addon">PK</span>
-                                <input type="text" placeholder="private key" name="privatekey" data-toggle="tooltip" data-placement="bottom" title="Your private key should be in WIF format. For more information about where to find this, see the Participate page.">
+                                <input type="text" placeholder="${LANG_PRIVATE_KEY}" name="privatekey" data-toggle="tooltip" data-placement="bottom" title="${LANG_YOUR_PRIVATE_KEY_SHOULD_BE}">
                             </div>
                             <script>
                             $('input[type=text][name=privatekey]').tooltip({
@@ -54,30 +54,30 @@
 
                             <div class="input-group">
                                 <span class="input-group-btn">
-                                    <button class="btn btn-default" type="submit" onclick="this.innerHTML='Waiting';this.disabled=true;form.submit();">Import private key</button>
+                                    <button class="btn btn-default" type="submit" onclick="this.innerHTML='${LANG_CLICKED_WAITING}';this.disabled=true;form.submit();">${LANG_IMPORT_PRIVATE_KEY}</button>
                                 </span>
                             </div>
                     </form>
             </div>
             <div class="col-xs-4 segment one-third">
-                    <h2>Send</h2>
+                    <h2>${LANG_SEND}</h2>
                     <form action="/wallet" method="post">
                             <input type="hidden" name="form" value="send">
                             <input type="hidden" name="source" value="${address}">
 
                             <div class="input-group">
                                 <span class="input-group-addon">@</span>
-                                <input type="text" placeholder="destination address" name="destination">
+                                <input type="text" placeholder="${LANG_DESTINATION_ADDRESS}" name="destination">
                             </div>
 
                             <div class="input-group">
                               <span class="input-group-addon">#</span>
-                        <input type="text" placeholder="quantity (NEWB)" name="quantity">
+                              <input type="text" placeholder="${LANG_QUANTITY_NEWB}" name="quantity">
                             </div>
 
                             <div class="input-group">
                           <span class="input-group-btn">
-                            <button class="btn btn-default" type="submit" onclick="this.innerHTML='Waiting';this.disabled=true;form.submit();">Send</button>
+                            <button class="btn btn-default" type="submit" onclick="this.innerHTML='${LANG_CLICKED_WAITING}';this.disabled=true;form.submit();">${LANG_SEND}</button>
                           </span>
                         </div>
                     </form>
@@ -88,55 +88,57 @@
 
     <div class="row section padding-top">
         <ul id="tabs" class="nav nav-tabs" data-tabs="tabs">
-            <li class="active"><a href="#my_burns" data-toggle="tab"><#if own??>My<#else>His</#if> burns</a></li>
-            <li><a href="#my_sending" data-toggle="tab"><#if own??>My<#else>His</#if> sending transactions</a></li>
-            <li><a href="#my_receiving" data-toggle="tab"><#if own??>My<#else>His</#if> receiving transactions</a></li>
+            <li class="active"><a href="#my_receiving" data-toggle="tab"><#if own??>${LANG_MY}<#else>${LANG_HIS}</#if>${LANG_RECEIVING_TRANSACTIONS}</a></li>
+            <li><a href="#my_sending" data-toggle="tab"><#if own??>${LANG_MY}<#else>${LANG_HIS}</#if>${LANG_SENDING_TRANSACTIONS}</a></li>
+            <li><a href="#my_burns" data-toggle="tab"><#if own??>${LANG_MY}<#else>${LANG_HIS}</#if>${LANG_BURNS}</a></li>
         </ul>
 
         <div id="my-tab-content" class="tab-content">
-            <div class="tab-pane active" id="my_burns">
-                <h2><#if own??>My<#else>His</#if> burns</h2>
-
+            <div class="tab-pane  active" id="my_receiving">
+                <h2><#if own??>${LANG_MY}<#else>${LANG_HIS}</#if>${LANG_RECEIVING_TRANSACTIONS}</h2>
                 <table class="table table-striped">
                     <thead>
                         <tr>
-                            <th>Block</th>
-                            <th>Time</th>
-                            <th>Destination</th>
-                            <th>Burned (BTC)</th>
-                            <th>Earned (NEWB)</th>
-                            <th>Status</th>
+                            <th>${LANG_BLOCK}</th>
+                            <th>${LANG_TIME}</th>
+                            <th>${LANG_SOURCE}</th>
+                            <th>${LANG_QUANTITY} (NEWB)</th>
+                            <th>${LANG_STATUS}</th>
                         </tr>
                     </thead>
 
                     <tbody>
-                        <#if my_burns??>
-                        <#list my_burns as tx>
+                        <#if my_receives??>
+                        <#list my_receives as tx>
                         <tr>
                             <td><a   href="https://blockchain.info/block-index/${tx["block_index"]}/">${tx["block_index"]}</a></td>
                             <td>${ tx["block_time"]}</td>
-                            <td><a   href="/wallet?address=${tx["destination"]}">${tx["destination"]}</a></td>
-                            <td>${ tx["burned"]?string(",##0.00000000") }</td>
-                            <td>${ tx["earned"]?string(",##0.00") }</td>
+                            <td>
+							<#if !tx["source"]?? || tx["source"]?length lt 20 >
+							${tx["source"]}
+							<#else>
+							<a  href="/wallet?address=${tx["source"]}">${tx["source"]}</a>
+							</#if>
+							</td>
+                            <td>${ tx["amount"]?string(",##0.00") }</td>
                             <td>${ tx["validity"]}</td>
                         </tr>
                         </#list>
                         </#if>
                     </tbody>
                 </table>
-
             </div>
-
+            
             <div class="tab-pane" id="my_sending">
-                <h2><#if own??>My<#else>His</#if> sending transactions</h2>
+                <h2><#if own??>${LANG_MY}<#else>${LANG_HIS}</#if>${LANG_SENDING_TRANSACTIONS}</h2>
                 <table class="table table-striped">
                     <thead>
                         <tr>
-                            <th>Block</th>
-                            <th>Time</th>
-                            <th>Destination</th>
-                            <th>Quantity (NEWB)</th>
-                            <th>Status</th>
+                            <th>${LANG_BLOCK}</th>
+                            <th>${LANG_TIME}</th>
+                            <th>${LANG_DESTINATION}</th>
+                            <th>${LANG_QUANTITY} (NEWB)</th>
+                            <th>${LANG_STATUS}</th>
                         </tr>
                     </thead>
                     
@@ -156,39 +158,37 @@
                 </table>
             </div>
             
-            <div class="tab-pane" id="my_receiving">
-                <h2><#if own??>My<#else>His</#if> receiving transactions</h2>
+           <div class="tab-pane" id="my_burns">
+                <h2><#if own??>${LANG_MY}<#else>${LANG_HIS}</#if>${LANG_BURNS}</h2>
+
                 <table class="table table-striped">
                     <thead>
                         <tr>
-                            <th>Block</th>
-                            <th>Time</th>
-                            <th>Source</th>
-                            <th>Quantity (NEWB)</th>
-                            <th>Status</th>
+                            <th>${LANG_BLOCK}</th>
+                            <th>${LANG_TIME}</th>
+                            <th>${LANG_DESTINATION}</th>
+                            <th>${LANG_BURNED} (BTC)</th>
+                            <th>${LANG_EARNED} (NEWB)</th>
+                            <th>${LANG_STATUS}</th>
                         </tr>
                     </thead>
 
                     <tbody>
-                        <#if my_receives??>
-                        <#list my_receives as tx>
+                        <#if my_burns??>
+                        <#list my_burns as tx>
                         <tr>
                             <td><a   href="https://blockchain.info/block-index/${tx["block_index"]}/">${tx["block_index"]}</a></td>
                             <td>${ tx["block_time"]}</td>
-                            <td>
-							<#if !tx["source"]?? || tx["source"]?length lt 20 >
-							${tx["source"]}
-							<#else>
-							<a   href="/wallet?address=${tx["source"]}">${tx["source"]}</a>
-							</#if>
-							</td>
-                            <td>${ tx["amount"]?string(",##0.00") }</td>
+                            <td><a   href="/wallet?address=${tx["destination"]}">${tx["destination"]}</a></td>
+                            <td>${ tx["burned"]?string(",##0.00000000") }</td>
+                            <td>${ tx["earned"]?string(",##0.00") }</td>
                             <td>${ tx["validity"]}</td>
                         </tr>
                         </#list>
                         </#if>
                     </tbody>
                 </table>
+
             </div>
         </div>
 

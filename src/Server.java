@@ -86,6 +86,26 @@ public class Server implements Runnable {
 				attributes.put("own", true);
 			}
 		}
+        
+        attributes.put("LANG_NEWBIECOIN", Language.getLangLabel("Newbiecoin"));
+        attributes.put("LANG_CROWDFUNDING", Language.getLangLabel("Crowdfunding"));
+        attributes.put("LANG_CASINO", Language.getLangLabel("Casino"));
+        attributes.put("LANG_EXCHANGE", Language.getLangLabel("Exchange"));
+        attributes.put("LANG_WALLET", Language.getLangLabel("Wallet"));
+        attributes.put("LANG_TECHNICAL", Language.getLangLabel("Technical"));
+        attributes.put("LANG_COMMUNITY", Language.getLangLabel("Community"));
+        
+        attributes.put("LANG_BLOCKS", Language.getLangLabel("blocks"));
+        attributes.put("LANG_VERSION", Language.getLangLabel("Version"));
+        
+        attributes.put("LANG_VIEWING_OTHER_ADDRESS", Language.getLangLabel("Viewing other address"));
+        attributes.put("LANG_VIEWING_OTHER_ADDRESS_NOTICE", Language.getLangLabel("Notice: Click your address listed on the right side to go back your wallet."));
+        attributes.put("LANG_REPARSE_TRANSACTIONS", Language.getLangLabel("Reparse transactions"));
+        attributes.put("LANG_VERSION_OUT_OF_DATE", Language.getLangLabel("You must update to the latest version of Newbiecoin. Your version is out of date."));
+        attributes.put("LANG_PARSING_TRANSACTIONS", Language.getLangLabel("Newbiecoin is parsing transactions. You can still use the software, but the information you see will be out of date."));
+        
+        attributes.put("LANG_ERROR", Language.getLangLabel("Error"));
+        
 		return attributes;
 	}
 	
@@ -149,8 +169,12 @@ public class Server implements Runnable {
 				Map<String, Object> attributes = new HashMap<String, Object>();
 				request.session(true);
 				attributes = updateCommonStatus(request, attributes);
-				attributes.put("title", "A coin for betting in a decentralized casino");
-				attributes.put("news_url", Config.newsUrl);
+				attributes.put("title", "A coin focusing on decentralized applications");
+                
+                if(Language.getCurrentLang().equals("CN"))
+                    attributes.put("news_url", Config.newsUrlCN);
+                else
+                    attributes.put("news_url", Config.newsUrl);
 				
 				//Only for test
 				if(Config.testNet && Config.appName.equals("NewbiecoinBeta") &&  Config.prefix.equals("NEWBIECO") ){
@@ -229,6 +253,42 @@ public class Server implements Runnable {
 				}
 				attributes.put("bets", bets);
 				*/
+                
+                attributes.put("LANG_A_UNIQUE_COIN", Language.getLangLabel("a unique coin that focus on decentralized applications such as decentralized crowdfunding,decentralized casino."));
+                attributes.put("LANG_MADE_FOR_A_LITTLE_JOY", Language.getLangLabel("Newbiecoin is a coin and a decentralized platform. It's made for a little joy."));
+                attributes.put("LANG_DOWNLOAD", Language.getLangLabel("Download"));
+                attributes.put("LANG_SOFTWARE_INCLUDING", Language.getLangLabel("the Newbiecoin software -- including wallet , decentralized crowdfunding, decentralized casino, and decentralized exchange . Start playing today!"));
+                attributes.put("LANG_CREATED_BY_BURNING", Language.getLangLabel("Coins were created by burning Bitcoins during a creative Twin-POB period. Now there are total"));
+                attributes.put("LANG_BUILT_ON_BITCOIN_BLOCKCHAIN", Language.getLangLabel("Built on top of the Bitcoin blockchain, Newbiecoin is a platform that is truly decentralized. There is no central point of failure. The owner can't run away with the bankroll. It's owned by the people."));
+                attributes.put("LANG_LEARN_MORE", Language.getLangLabel("Learn more"));
+                attributes.put("LANG_NEWS", Language.getLangLabel("News"));
+
+                attributes.put("LANG_CREATE_NEW_PROJECT", Language.getLangLabel("Create a new project"));
+                attributes.put("LANG_LEFT", Language.getLangLabel("Left"));
+                attributes.put("LANG_VIEW", Language.getLangLabel("View"));
+                attributes.put("LANG_PROJECT_EXPIRED", Language.getLangLabel("project expired and pending resolved."));
+                attributes.put("LANG_SUCCESSFULLY_FUNDED", Language.getLangLabel("Successfully funded!"));
+                attributes.put("LANG_FAILED", Language.getLangLabel("Failed!"));
+                attributes.put("LANG_CANCELED", Language.getLangLabel("Canceled"));
+                attributes.put("LANG_TOTAL", Language.getLangLabel("Total"));
+                attributes.put("LANG_OF", Language.getLangLabel("of"));                
+                attributes.put("LANG_BACKERS", Language.getLangLabel("Backers"));
+                attributes.put("LANG_PROJECT_BY", Language.getLangLabel("Project by"));
+                attributes.put("LANG_CREATED_TIME", Language.getLangLabel("Created time"));
+                
+                attributes.put("LANG_ROLL_DICE", Language.getLangLabel("Roll dice"));
+                attributes.put("LANG_BIGGER", Language.getLangLabel("Bigger"));
+                attributes.put("LANG_SMALLER", Language.getLangLabel("Smaller"));
+                attributes.put("LANG_RECENT_BETS", Language.getLangLabel("Recent bets"));
+                attributes.put("LANG_BLOCK", Language.getLangLabel("Block"));
+                attributes.put("LANG_TIME", Language.getLangLabel("Time"));
+                attributes.put("LANG_SOURCE_ADDRESS", Language.getLangLabel("Source address"));
+                attributes.put("LANG_BET_SIZE", Language.getLangLabel("Bet size"));
+                attributes.put("LANG_BIGGER_OR_SMALLER", Language.getLangLabel("Bigger or Smaller"));
+                attributes.put("LANG_ROLL", Language.getLangLabel("Roll"));
+                attributes.put("LANG_PROFIT", Language.getLangLabel("Profit"));
+                attributes.put("LANG_PENDING", Language.getLangLabel("Pending"));
+                attributes.put("LANG_UNRESOLVED", Language.getLangLabel("Unresolved"));
 
 				return modelAndView(attributes, "index.html");
 			}
@@ -253,6 +313,18 @@ public class Server implements Runnable {
 
 				attributes = updateCommonStatus(request, attributes);
 				attributes.put("title", "Community");
+                
+                attributes.put("LANG_BITCOINTALK", Language.getLangLabel("Bitcointalk"));  
+                attributes.put("LANG_CONTACT", Language.getLangLabel("Contact"));  
+                attributes.put("LANG_EMAIL", Language.getLangLabel("Email"));  
+                attributes.put("LANG_WEBSITE", Language.getLangLabel("Website"));  
+                attributes.put("LANG_RESOURCE", Language.getLangLabel("Resource"));  
+                attributes.put("LANG_MEMBERS", Language.getLangLabel("Members"));  
+                attributes.put("LANG_CHINA", Language.getLangLabel("China"));  
+                attributes.put("LANG_CANADA", Language.getLangLabel("Canada"));  
+                attributes.put("LANG_DONATIONS", Language.getLangLabel("Donations"));  
+                attributes.put("LANG_DONATIONS_ARE_WELCOME", Language.getLangLabel("Donations are welcome."));  
+                
 				return modelAndView(attributes, "community.html");
 			}
 		});
@@ -292,11 +364,11 @@ public class Server implements Runnable {
 				attributes.put("burned_NBC_dark", Util.nbcBurned(Config.burnAddressDark).doubleValue()/Config.nbc_unit.doubleValue());
                 
                 if( btcBlockHeight>=Config.pobTrialStartBlock && btcBlockHeight<=Config.pobDownEndBlock) 
-                    attributes.put("burn_status","ACTIVE" );
+                    attributes.put("burn_status",Language.getLangLabel("ACTIVE") );
                 else if( btcBlockHeight < Config.pobTrialStartBlock )
-                    attributes.put("burn_status","WAITING" );
+                    attributes.put("burn_status",Language.getLangLabel("WAITING") );
                 else
-                    attributes.put("burn_status","COMPLETED" );
+                    attributes.put("burn_status",Language.getLangLabel("COMPLETED") );
                 
                 attributes.put("pos_first_block", Config.posFirstBlock);
 				attributes.put("pos_end_block", Config.posEndBlock);
@@ -304,13 +376,13 @@ public class Server implements Runnable {
                 attributes.put("pos_interest", Config.posInterest*100);
                 
                 if( btcBlockHeight>=Config.posFirstBlock && btcBlockHeight<=Config.posEndBlock) 
-                    attributes.put("pos_status","ACTIVE" );
+                    attributes.put("pos_status",Language.getLangLabel("ACTIVE") );
                 else if( btcBlockHeight < Config.posFirstBlock )
-                    attributes.put("pos_status","WAITING" );
+                    attributes.put("pos_status",Language.getLangLabel("WAITING") );
                 else
-                    attributes.put("pos_status","COMPLETED" );
+                    attributes.put("pos_status",Language.getLangLabel("COMPLETED") );
                 
-				return modelAndView(attributes, "technical.html");
+				return modelAndView(attributes, "technical"+Language.getCurrentLang()+".html");
 			}
 		});
 		get(new FreeMarkerRoute("/balances") {
@@ -470,7 +542,33 @@ public class Server implements Runnable {
 					String publicKey = RSACoder.getPublicKey(keyMap);  
 
 					attributes.put("rsa_public_key", publicKey);
-
+                    
+                    attributes.put("LANG_TITLE", Language.getLangLabel("Title"));
+                    attributes.put("LANG_PROJECT_TITLE", Language.getLangLabel("project title"));
+                    attributes.put("LANG_LOGO_IMAGE_URL", Language.getLangLabel("Logo image URL"));
+                    attributes.put("LANG_THE_LOGO_IMAGE_SHOULD_BE", Language.getLangLabel("the logo image URL (The image should be jpg,png or gif . The suggested width*height is 100*100 pixels.)"));
+                    attributes.put("LANG_TOPIC_IMAGE_URL", Language.getLangLabel("Topic image URL"));
+                    attributes.put("LANG_THE_TOPIC_IMAGE_SHOULD_BE", Language.getLangLabel("The topic image URL (The image should be jpg,png or gif . The suggested width*height is 640*360 pixels.)"));
+                    attributes.put("LANG_DETAIL_IMAGE_URL", Language.getLangLabel("Detail image URL"));
+                    attributes.put("LANG_THE_DETAIL_IMAGE_SHOULD_BE", Language.getLangLabel("the introduction image URL (The image should be jpg,png or gif . The suggested width is 640 pixels. The height is less than 4000 pixels)"));
+                    attributes.put("LANG_GOAL_CROWDFUNDING_AMOUNT", Language.getLangLabel("Goal crowdfunding amount"));
+                    attributes.put("LANG_THE_GOAL_NEWBIECOIN_AMOUNT_FOR", Language.getLangLabel("the goal newbiecoin amount for successful crowdfunding"));
+                    attributes.put("LANG_EXPIRE_DATE", Language.getLangLabel("Expire date"));
+                    attributes.put("LANG_YYYY_MM_DD", Language.getLangLabel("YYYY-MM-DD"));
+                    attributes.put("LANG_YOUR_NAME", Language.getLangLabel("Your name"));
+                    attributes.put("LANG_THE_CREATOR_NAME_OF_YOU", Language.getLangLabel("the creator's name of you or your team"));
+                    attributes.put("LANG_EMAIL", Language.getLangLabel("Email"));  
+                    attributes.put("LANG_THE_PUBLIC_EMAIL_FOR", Language.getLangLabel("the public email for backers contacting you"));
+                    attributes.put("LANG_WEBSITE", Language.getLangLabel("Website"));  
+                    attributes.put("LANG_PROJECT_WEBSITE", Language.getLangLabel("project website"));
+                    attributes.put("LANG_CROWDFUNDING_ITEM", Language.getLangLabel("Crowdfunding item"));
+                    attributes.put("LANG_NEWB_AMOUNT", Language.getLangLabel("NEWB amount"));
+                    attributes.put("LANG_MAX_BACKERS_NUMBER", Language.getLangLabel("max backers number"));
+                    attributes.put("LANG_A_SHORT_DESCRIPTION_FOR", Language.getLangLabel("a short description for this item"));
+                    attributes.put("LANG_OPTIONAL", Language.getLangLabel("Optional"));
+                    attributes.put("LANG_CREATE_IT", Language.getLangLabel("Create it"));  
+                    attributes.put("LANG_CLICKED_WAITING", Language.getLangLabel("Waiting"));  
+                    
 					return modelAndView(attributes, "crowdfunding-add.html");
 				}catch(Exception e){
 					return null;
@@ -517,9 +615,9 @@ public class Server implements Runnable {
 			try {
 				Transaction tx = Cancel.create(txHash);
 				blocks.sendTransaction(address,tx);
-				attributes.put("success", "Your request for canceling order has been submited.Please wait confirms for at least 1 block.");
+				attributes.put("success", Language.getLangLabel("Your request had been submited. Please wait confirms for at least 1 block."));
 			} catch (Exception e) {
-				attributes.put("error", e.getMessage());
+				attributes.put("error", Language.getLangLabel(e.getMessage()));
 			}
 		}
 		else if (request.queryParams().contains("form") && request.queryParams("form").equals("btcpay")) {
@@ -527,12 +625,12 @@ public class Server implements Runnable {
 			try {
 				Transaction tx = BTCPay.create(orderMatchId);
 				blocks.sendTransaction(address,tx);
-				attributes.put("success", "Your payment had been submited.Please wait confirms for at least 1 block.");
+				attributes.put("success", Language.getLangLabel("Your request had been submited. Please wait confirms for at least 1 block."));
 				
 				Database db = Database.getInstance();
 				db.executeUpdate("update order_matches set validity='btcpayed' where id='"+orderMatchId+"';");
 			} catch (Exception e) {
-				attributes.put("error", e.getMessage());
+				attributes.put("error", Language.getLangLabel(e.getMessage()));
 			}
 		}
 		else if (request.queryParams().contains("form") && request.queryParams("form").equals("buy")) {
@@ -547,9 +645,9 @@ public class Server implements Runnable {
 				
 				blocks.sendTransaction(source,tx);				
 				
-				attributes.put("success", "Your order of buying NEWB had been submited.Please wait confirms for at least 1 block.");
+				attributes.put("success", Language.getLangLabel("Your request had been submited. Please wait confirms for at least 1 block."));
 			} catch (Exception e) {
-				attributes.put("error", e.getMessage());
+				attributes.put("error", Language.getLangLabel(e.getMessage()));
 			}					
 		}
 		else if (request.queryParams().contains("form") && request.queryParams("form").equals("sell")) {
@@ -562,9 +660,9 @@ public class Server implements Runnable {
 			try {
 				Transaction tx = Order.create(source, "NBC", quantity, "BTC", btcQuantity, expiration, BigInteger.ZERO, BigInteger.ZERO);
 				blocks.sendTransaction(source,tx);
-				attributes.put("success", "Your order of selling NEWB had been submited.Please wait confirms for at least 1 block.");
+				attributes.put("success", Language.getLangLabel("Your request had been submited. Please wait confirms for at least 1 block."));
 			} catch (Exception e) {
-				attributes.put("error", e.getMessage());
+				attributes.put("error", Language.getLangLabel(e.getMessage()));
 			}
 		}
 
@@ -689,7 +787,55 @@ public class Server implements Runnable {
 			myPendingOrders.add(map);
 		}
 		attributes.put("my_pending_orders", myPendingOrders);
-
+        
+        attributes.put("LANG_BUY", Language.getLangLabel("Buy"));  
+        attributes.put("LANG_QUANTITY_THAT_YOU_WANT_TO_BUY", Language.getLangLabel("quantity that you want to buy"));  
+        attributes.put("LANG_PRICE", Language.getLangLabel("Price"));  
+        attributes.put("LANG_GOOD_FOR_ONE_HOUR", Language.getLangLabel("Good for one hour (6 blocks)"));  
+        attributes.put("LANG_GOOD_FOR_ONE_DAY", Language.getLangLabel("Good for one day (144 blocks)"));  
+        attributes.put("LANG_GOOD_FOR_ONE_WEEK", Language.getLangLabel("Good for one week (1008 blocks)"));  
+        attributes.put("LANG_GOOD_FOR_ONE_MONTH", Language.getLangLabel("Good for one month (4320 blocks)"));  
+        attributes.put("LANG_ORDER_BOOK", Language.getLangLabel("Order book"));  
+        attributes.put("LANG_SELL", Language.getLangLabel("Sell"));  
+        attributes.put("LANG_QUANTITY_THAT_YOU_WANT_TO_SELL", Language.getLangLabel("quantity that you want to sell"));  
+        attributes.put("LANG_MY_ORDERS", Language.getLangLabel("My orders"));  
+        attributes.put("LANG_BUY_OR_SELL", Language.getLangLabel("Buy/sell"));  
+        attributes.put("LANG_STATUS", Language.getLangLabel("Status"));  
+        attributes.put("LANG_PENDING", Language.getLangLabel("Pending"));  
+        attributes.put("LANG_ORDER_FILLED", Language.getLangLabel("order filled"));  
+        attributes.put("LANG_INVALID_EXPIRED", Language.getLangLabel("invalid:expired"));  
+        attributes.put("LANG_CANCEL", Language.getLangLabel("Cancel"));  
+        attributes.put("LANG_BTC_PAYED_PENDING_CONFIRMED", Language.getLangLabel("BTC payed: pending confirmed"));  
+        attributes.put("LANG_PENDING_PAY_BTC", Language.getLangLabel("Pending pay BTC"));  
+        attributes.put("LANG_PENDING_BTC_PAYED", Language.getLangLabel("Pending BTC payed"));  
+        attributes.put("LANG_MY_MATCHED_ORDERS", Language.getLangLabel("My matched orders"));  
+        attributes.put("LANG_BTC_OWED", Language.getLangLabel("BTC owed"));  
+        attributes.put("LANG_NEWB_IN_RETURN", Language.getLangLabel("NEWB in return"));  
+        attributes.put("LANG_PAY_BTC", Language.getLangLabel("Pay BTC"));  
+        attributes.put("LANG_SUBMIT", Language.getLangLabel("Submit"));  
+        attributes.put("LANG_NO", Language.getLangLabel("No"));  
+        attributes.put("LANG_YES", Language.getLangLabel("Yes"));  
+        attributes.put("LANG_INVALID_ORDER", Language.getLangLabel("Invalid order"));  
+        attributes.put("LANG_THE_ORDER_AMOUNT_SHOULD_BE", Language.getLangLabel("The order amount should be greater than 0.001 BTC!"));  
+        attributes.put("LANG_NOW_THE_ORDER_AMOUNT_IS_ONLY", Language.getLangLabel("Now the order amount is only"));  
+        attributes.put("LANG_ARE_YOU_SURE_TO", Language.getLangLabel("Are you sure to"));  
+        attributes.put("LANG_SATOSHI", Language.getLangLabel("Satoshi"));  
+        attributes.put("LANG_YOU_WOULD_PAY", Language.getLangLabel("You would pay"));  
+        attributes.put("LANG_WHILE_YOUR_ORDER_BE_MATCHED_IN", Language.getLangLabel("while your order be matched in"));  
+        attributes.put("LANG_BLOCKS", Language.getLangLabel("blocks"));  
+        attributes.put("LANG_YOU_WOULD_GET", Language.getLangLabel("You would get"));  
+        attributes.put("LANG_INVALID_PAYMENT", Language.getLangLabel("Invalid payment"));  
+        attributes.put("LANG_THE_BTC_PAYMENT_SHOULD_BE", Language.getLangLabel("The btc payment should be greater than 0.001 BTC for each time!<br>Now your payment is only"));  
+        attributes.put("LANG_ARE_YOU_SURE_TO_PAY", Language.getLangLabel("Are you sure to pay"));  
+        attributes.put("LANG_INCLUDE", Language.getLangLabel("include"));  
+        attributes.put("LANG_FEE_TO_BTC_NETWORK", Language.getLangLabel("fee to BTC network"));  
+        attributes.put("LANG_IN_RETURN", Language.getLangLabel("in return."));  
+        attributes.put("LANG_ARE_YOU_SURE_TO_CANCEL_THIS_ORDER", Language.getLangLabel("Are you sure to cancel this order ?"));  
+        attributes.put("LANG_ORDER_TX_HASH", Language.getLangLabel("Order TX Hash"));  
+        attributes.put("LANG_BUY_LOWER", Language.getLangLabel("buy"));  
+        attributes.put("LANG_SELL_LOWER", Language.getLangLabel("sell"));  
+        attributes.put("LANG_CLICKED_WAITING", Language.getLangLabel("Waiting"));  
+        
 		return attributes;		
 	}
 	
@@ -712,7 +858,7 @@ public class Server implements Runnable {
 			if (deleteKey != null) {
 				logger.info("Deleting private key");
 				blocks.wallet.removeKey(deleteKey);
-				attributes.put("success", "Your private key has been deleted. You can no longer transact from this address.");							
+				attributes.put("success", Language.getLangLabel("Your private key has been deleted. You can no longer transact from this address."));							
 				if (blocks.wallet.getKeys().size()<=0) {
 					ECKey newKey = new ECKey();
 					blocks.wallet.addKey(newKey);
@@ -731,9 +877,9 @@ public class Server implements Runnable {
 				logger.info("Reimporting private key transactions");
 				try {
 					blocks.importPrivateKey(importKey);
-					attributes.put("success", "Your transactions have been reimported.");
+					attributes.put("success", Language.getLangLabel("Your transactions have been reimported."));
 				} catch (Exception e) {
-					attributes.put("error", "Error when reimporting transactions: "+e.getMessage());
+					attributes.put("error", Language.getLangLabel("Error when reimporting transactions: ")+e.getMessage());
 				}
 			}
 		}
@@ -750,9 +896,9 @@ public class Server implements Runnable {
 			}
 
 			if(destination.length()==0){
-				attributes.put("error", "Please input a valid destination address  that you want to send.");
+				attributes.put("error", Language.getLangLabel("Please input a valid destination address that you want to send."));
 			}else if(quantityStr.length()==0){
-				attributes.put("error", "Please input the NEWB amount that you want to send.");
+				attributes.put("error", Language.getLangLabel("Please input the NEWB amount that you want to send."));
 			} else {
 				try {
 					Double rawQuantity = Double.parseDouble(quantityStr);
@@ -760,7 +906,7 @@ public class Server implements Runnable {
 				
 					Transaction tx = Send.create(source, destination, "NBC", quantity);
 					blocks.sendTransaction(source,tx);
-					attributes.put("success", "Your request of sending NEWB had been submited.Please wait confirms for at least 1 block.");
+					attributes.put("success", Language.getLangLabel("Your request had been submited. Please wait confirms for at least 1 block."));
 				} catch (Exception e) {
 					attributes.put("error", e.getMessage());
 				}
@@ -773,9 +919,9 @@ public class Server implements Runnable {
 				address = Blocks.getInstance().importPrivateKey(privateKey);
 				request.session().attribute("address", address);
 				attributes.put("address", address);				
-				attributes.put("success", "Your private key has been imported.");
+				attributes.put("success", Language.getLangLabel("Your private key has been imported."));
 			} catch (Exception e) {
-				attributes.put("error", "Error when importing private key: "+e.getMessage());
+				attributes.put("error", Language.getLangLabel("Error when importing private key: ")+e.getMessage());
 			}
 		}
 		
@@ -814,7 +960,7 @@ public class Server implements Runnable {
 				map.put("validity", rs.getString("validity"));
 				map.put("amount", BigInteger.valueOf(rs.getLong("amount")).doubleValue()/Config.nbc_unit.doubleValue());
 				map.put("tx_hash", rs.getString("tx_hash"));
-				map.put("source", rs.getString("source"));
+				map.put("source", Language.getLangLabel(rs.getString("source")));
 				map.put("destination", rs.getString("destination"));
 				myReceives.add(map);
 			}
@@ -880,6 +1026,30 @@ public class Server implements Runnable {
 			blocks.wallet.saveToFile(new File(blocks.walletFile));
 		} catch (IOException e) {
 		}
+        
+        attributes.put("LANG_MY", Language.getLangLabel("My "));
+        attributes.put("LANG_HIS", Language.getLangLabel("His "));
+        attributes.put("LANG_BALANCE", Language.getLangLabel("balance"));
+        attributes.put("LANG_NEWB", Language.getLangLabel("NEWB"));
+        attributes.put("LANG_BTC", Language.getLangLabel("BTC"));
+        attributes.put("LANG_IMPORT_PRIVATE_KEY", Language.getLangLabel("Import private key"));
+        attributes.put("LANG_PRIVATE_KEY", Language.getLangLabel("private key"));
+        attributes.put("LANG_YOUR_PRIVATE_KEY_SHOULD_BE", Language.getLangLabel("Your private key should be in WIF format. For more information about where to find this, see the Participate page."));
+        attributes.put("LANG_SEND", Language.getLangLabel("Send"));
+        attributes.put("LANG_DESTINATION_ADDRESS", Language.getLangLabel("destination address"));
+        attributes.put("LANG_QUANTITY_NEWB", Language.getLangLabel("quantity (NEWB)"));
+        attributes.put("LANG_BURNS", Language.getLangLabel("burns"));
+        attributes.put("LANG_SENDING_TRANSACTIONS", Language.getLangLabel("sending transactions"));
+        attributes.put("LANG_RECEIVING_TRANSACTIONS", Language.getLangLabel("receiving transactions"));
+        attributes.put("LANG_BLOCK", Language.getLangLabel("Block"));
+        attributes.put("LANG_TIME", Language.getLangLabel("Time"));
+        attributes.put("LANG_SOURCE", Language.getLangLabel("Source"));
+        attributes.put("LANG_DESTINATION", Language.getLangLabel("Destination"));
+        attributes.put("LANG_BURNED", Language.getLangLabel("Burned"));
+        attributes.put("LANG_EARNED", Language.getLangLabel("Earned"));
+        attributes.put("LANG_STATUS", Language.getLangLabel("Status"));
+        attributes.put("LANG_QUANTITY", Language.getLangLabel("Quantity"));
+        attributes.put("LANG_CLICKED_WAITING", Language.getLangLabel("Waiting"));  
 		
 		return attributes;
 	}
@@ -905,7 +1075,7 @@ public class Server implements Runnable {
 				
 					Transaction tx = Bet.create(source,  bet, bigORsmall);
 					blocks.sendTransaction(source,tx);
-					attributes.put("success", "Thank you for betting! Your request had been submited.Please wait confirms for at least 1 block.");
+					attributes.put("success", Language.getLangLabel("Your request had been submited. Please wait confirms for at least 1 block."));
 				} catch (Exception e) {
 					attributes.put("error", e.getMessage());
 				}
@@ -1100,6 +1270,20 @@ public class Server implements Runnable {
 			bets.add(map);
 		}
 		attributes.put("my_bets_pending", bets);
+        
+        attributes.put("LANG_ROLL_DICE", Language.getLangLabel("Roll dice"));
+        attributes.put("LANG_BIGGER", Language.getLangLabel("Bigger"));
+        attributes.put("LANG_SMALLER", Language.getLangLabel("Smaller"));
+        attributes.put("LANG_RECENT_BETS", Language.getLangLabel("Recent bets"));
+        attributes.put("LANG_BLOCK", Language.getLangLabel("Block"));
+        attributes.put("LANG_TIME", Language.getLangLabel("Time"));
+        attributes.put("LANG_SOURCE_ADDRESS", Language.getLangLabel("Source address"));
+        attributes.put("LANG_BET_SIZE", Language.getLangLabel("Bet size"));
+        attributes.put("LANG_BIGGER_OR_SMALLER", Language.getLangLabel("Bigger or Smaller"));
+        attributes.put("LANG_ROLL", Language.getLangLabel("Roll"));
+        attributes.put("LANG_PROFIT", Language.getLangLabel("Profit"));
+        attributes.put("LANG_PENDING", Language.getLangLabel("Pending"));
+        attributes.put("LANG_UNRESOLVED", Language.getLangLabel("Unresolved"));
 
 		return attributes;
 	}
@@ -1125,7 +1309,7 @@ public class Server implements Runnable {
 				
 					Transaction tx = BetWorldCup.create(source,  bet, championTeamId,secondTeamId);
 					blocks.sendTransaction(source,tx);
-					attributes.put("success", "Thank you for betting! Your request had been submited.Please wait confirms for at least 1 block.");
+					attributes.put("success", Language.getLangLabel("Your request had been submited. Please wait confirms for at least 1 block."));
 				} catch (Exception e) {
 					attributes.put("error", e.getMessage());
 				}
@@ -1168,7 +1352,7 @@ public class Server implements Runnable {
 			String   aboutWaitTimeDesc="";
 			Integer  aboutDays=new Double(java.lang.Math.floor(waitSeconds.doubleValue()/new Double(60*60*24).doubleValue())).intValue();
 			if(aboutDays>0)
-				aboutWaitTimeDesc=aboutDays.toString() + " days";
+				aboutWaitTimeDesc=aboutDays.toString() + " " + Language.getLangLabel("days");
 			
 			waitSeconds=waitSeconds%(60*60*24);
 			Integer  aboutHours=new Double( java.lang.Math.floor(waitSeconds.doubleValue() /new Double(60*60).doubleValue())).intValue();
@@ -1418,9 +1602,9 @@ public class Server implements Runnable {
 					Long leftSeconds=expireUTC-nowtime.getTimeInMillis()/1000L;
 
 					if(leftSeconds<60*60*24L || leftSeconds>60*60*24*365L  ){
-						attributes.put("error", "Please input a valid expire date ( At least 1 day and at most 1 year from today).");
+						attributes.put("error", Language.getLangLabel("Please input a valid expire date ( At least 1 day and at most 1 year from today)."));
 					} else if( itemSets.length()==0 ){
-						attributes.put("error", "Please set at least one valid item for backing.");
+						attributes.put("error", Language.getLangLabel("Please set at least one valid item for backing."));
 					} else {
 						Map mapProjectSet = new HashMap(); 
 						mapProjectSet.put("title", titleStr); 
@@ -1439,14 +1623,14 @@ public class Server implements Runnable {
 						
 						Transaction tx = CrowdfundingProject.createProject(owner,  project_set);
 						blocks.sendTransaction(owner,tx);
-						attributes.put("success", "Thank you for creating a project! Your request had been submited.Please wait confirms for at least 1 block.");
+						attributes.put("success", Language.getLangLabel("Your request had been submited. Please wait confirms for at least 1 block."));
 					}
 				} catch (Exception e) {
 					logger.error("************* do add-project error: "+e.getMessage());
 					attributes.put("error", e.getMessage());
 				}
 			} else {
-				attributes.put("error", "Please input valid title, expire date,min fund amount, logo/topic/detail img url,website url, your name and email.");
+				attributes.put("error", Language.getLangLabel("Please input valid title, expire date,min fund amount, logo/topic/detail img url,website url, your name and email."));
 			}
 		}
 		
@@ -1596,7 +1780,45 @@ public class Server implements Runnable {
 		} catch (SQLException e) {
 		}
 		
-		attributes.put("my_backs", crowdfunding_projects);
+		attributes.put("my_backs", crowdfunding_projects);        
+        
+        
+        attributes.put("LANG_CREATE_NEW_PROJECT", Language.getLangLabel("Create a new project"));
+        attributes.put("LANG_LEFT", Language.getLangLabel("Left"));
+        attributes.put("LANG_VIEW", Language.getLangLabel("View"));
+        attributes.put("LANG_PROJECT_EXPIRED", Language.getLangLabel("project expired and pending resolved."));
+        attributes.put("LANG_SUCCESSFULLY_FUNDED", Language.getLangLabel("Successfully funded!"));
+        attributes.put("LANG_FAILED", Language.getLangLabel("Failed!"));
+        attributes.put("LANG_CANCELED", Language.getLangLabel("Canceled"));
+        attributes.put("LANG_TOTAL", Language.getLangLabel("Total"));
+        attributes.put("LANG_OF", Language.getLangLabel("of"));                
+        attributes.put("LANG_BACKERS", Language.getLangLabel("Backers"));
+        attributes.put("LANG_PROJECT_BY", Language.getLangLabel("Project by"));
+        attributes.put("LANG_CREATED_TIME", Language.getLangLabel("Created time"));
+        
+        attributes.put("LANG_THE_NEWEST", Language.getLangLabel("The newest!"));
+        attributes.put("LANG_RECENT_PROJECTS", Language.getLangLabel("Recent projects"));
+        attributes.put("LANG_MY_PROJECTS", Language.getLangLabel("My projects"));
+        attributes.put("LANG_MY_BACKS", Language.getLangLabel("My backs"));
+
+        attributes.put("LANG_LOGO", Language.getLangLabel("Logo"));
+        attributes.put("LANG_BLOCK", Language.getLangLabel("Block"));
+        attributes.put("LANG_TIME", Language.getLangLabel("Time"));
+        attributes.put("LANG_TITLE", Language.getLangLabel("Title"));
+        attributes.put("LANG_OWNER", Language.getLangLabel("Owner"));
+        attributes.put("LANG_FUNDED", Language.getLangLabel("Funded"));
+        attributes.put("LANG_STATUS", Language.getLangLabel("Status"));
+        attributes.put("LANG_PLEDGE", Language.getLangLabel("Pledge"));
+        
+        attributes.put("LANG_PENDING", Language.getLangLabel("Pending"));
+        attributes.put("LANG_PROJECT", Language.getLangLabel("Project"));        
+        attributes.put("LANG_BACKED_ITEM", Language.getLangLabel("Backed Item"));        
+        attributes.put("LANG_BACKER", Language.getLangLabel("Backer"));        
+        attributes.put("LANG_VALID", Language.getLangLabel("valid"));        
+        attributes.put("LANG_SUCCESS", Language.getLangLabel("success"));
+        attributes.put("LANG_REFUNDED", Language.getLangLabel("refunded"));
+        attributes.put("LANG_PROJECT_FAILED", Language.getLangLabel("project failed"));
+        attributes.put("LANG_PROJECT_CANCELED", Language.getLangLabel("project canceled"));
 		
 		return attributes;
 	}
@@ -1655,12 +1877,12 @@ public class Server implements Runnable {
 						Transaction tx = CrowdfundingBack.backProject(backer, projectInfo.txHash, backPrice,encodedEmailStr);
 						blocks.sendTransaction(backer,tx);
 						Util.exportOriginalBackContact(tx.getHashAsString(),originalEmailStr);
-						attributes.put("success", "Thank you for backing the project! Your request had been submited.Please wait confirms for at least 1 block.");
+						attributes.put("success", Language.getLangLabel("Thank you for backing the project!")+Language.getLangLabel("Your request had been submited. Please wait confirms for at least 1 block."));
 					} catch (Exception e) {
 						attributes.put("error", e.getMessage());
 					}
 				} else {
-					attributes.put("error", "Please select which to be backed and input your valid email address.");
+					attributes.put("error", Language.getLangLabel("Please input your valid email address."));
 				}
 			}
 
@@ -1798,6 +2020,54 @@ public class Server implements Runnable {
 			
 		}					
 		
+        attributes.put("LANG_LEFT", Language.getLangLabel("Left"));
+        attributes.put("LANG_VIEW", Language.getLangLabel("View"));
+        attributes.put("LANG_PROJECT_EXPIRED", Language.getLangLabel("project expired and pending resolved."));
+        attributes.put("LANG_SUCCESSFULLY_FUNDED", Language.getLangLabel("Successfully funded!"));
+        attributes.put("LANG_FAILED", Language.getLangLabel("Failed!"));
+        attributes.put("LANG_CANCELED", Language.getLangLabel("Canceled"));
+        attributes.put("LANG_TOTAL", Language.getLangLabel("Total"));
+        attributes.put("LANG_OF", Language.getLangLabel("of"));                
+        attributes.put("LANG_BACKERS", Language.getLangLabel("Backers"));
+        attributes.put("LANG_PROJECT_BY", Language.getLangLabel("Project by"));
+        attributes.put("LANG_CREATED_TIME", Language.getLangLabel("Created time"));
+        
+        attributes.put("LANG_LOGO", Language.getLangLabel("Logo"));
+        attributes.put("LANG_BLOCK", Language.getLangLabel("Block"));
+        attributes.put("LANG_TIME", Language.getLangLabel("Time"));
+        attributes.put("LANG_TITLE", Language.getLangLabel("Title"));
+        attributes.put("LANG_OWNER", Language.getLangLabel("Owner"));
+        attributes.put("LANG_FUNDED", Language.getLangLabel("Funded"));
+        attributes.put("LANG_STATUS", Language.getLangLabel("Status"));
+        
+        attributes.put("LANG_PENDING", Language.getLangLabel("Pending"));
+        attributes.put("LANG_BACKED_ITEM", Language.getLangLabel("Backed Item"));        
+        attributes.put("LANG_BACKER", Language.getLangLabel("Backer"));        
+        attributes.put("LANG_VALID", Language.getLangLabel("valid"));        
+        attributes.put("LANG_SUCCESS", Language.getLangLabel("success"));
+        attributes.put("LANG_REFUNDED", Language.getLangLabel("refunded"));
+        attributes.put("LANG_PROJECT_FAILED", Language.getLangLabel("project failed"));
+        attributes.put("LANG_PROJECT_CANCELED", Language.getLangLabel("project canceled"));
+        
+        attributes.put("LANG_INVALID", Language.getLangLabel("Invalid"));  
+        attributes.put("LANG_EMAIL", Language.getLangLabel("Email"));  
+        attributes.put("LANG_WEBSITE", Language.getLangLabel("Website"));  
+        attributes.put("LANG_INTRODUCTION", Language.getLangLabel("Introduction"));  
+        attributes.put("LANG_RECENT_BACKERS", Language.getLangLabel("Recent backers"));  
+        attributes.put("LANG_PLEDGE", Language.getLangLabel("Pledge"));  
+        attributes.put("LANG_LIMITED", Language.getLangLabel("Limited"));  
+        attributes.put("LANG_LEFT_OF", Language.getLangLabel("left of"));  
+        attributes.put("LANG_YOUR_BACK_IS_PENDING", Language.getLangLabel("Your back is pending"));  
+        attributes.put("LANG_YOU_BACKED_IT", Language.getLangLabel("You backed it"));  
+        attributes.put("LANG_FILLED", Language.getLangLabel("filled"));  
+        attributes.put("LANG_BACK_IT", Language.getLangLabel("Back it!"));  
+        attributes.put("LANG_INPUT_YOUR_CONTACT", Language.getLangLabel("Please input your contact here"));  
+        attributes.put("LANG_YOUR_EMAIL", Language.getLangLabel("Your email"));  
+	attributes.put("LANG_CLICKED_WAITING", Language.getLangLabel("Waiting"));  
+        attributes.put("LANG_THE_CREATER_WOULD_CONTACT_YOU", Language.getLangLabel("While the project reach goal,the creater would contact you by email for more informations such as delivery address if need."));  
+        attributes.put("LANG_CANCEL", Language.getLangLabel("Cancel"));  
+        attributes.put("LANG_SUBMIT", Language.getLangLabel("Submit"));  
+        
 		return attributes;
 	}
 }

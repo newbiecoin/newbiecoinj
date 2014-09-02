@@ -51,7 +51,6 @@ import com.google.bitcoin.core.Wallet;
 import com.google.bitcoin.crypto.TransactionSignature;
 import com.google.bitcoin.net.discovery.DnsDiscovery;
 import com.google.bitcoin.params.MainNetParams;
-import com.google.bitcoin.params.TestNet3Params;
 import com.google.bitcoin.script.Script;
 import com.google.bitcoin.script.ScriptBuilder;
 import com.google.bitcoin.script.ScriptChunk;
@@ -193,7 +192,7 @@ public class Blocks implements Runnable {
 					logger.info(statusMessage);
 					Util.downloadToFile(Config.downloadUrl+Config.appName.toLowerCase()+"-"+Config.majorVersionDB.toString()+".db", fileNBCdb);
 				}
-				statusMessage = "Downloading Bitcoin blocks";
+				statusMessage = Language.getLangLabel("Downloading Bitcoin blocks");
 				blockStore = new H2FullPrunedBlockStore(params, Config.dbPath+Config.appName.toLowerCase(), 2000);
 				blockChain = new BlockChain(params, wallet, blockStore);
 				peerGroup = new PeerGroup(params, blockChain);
@@ -389,7 +388,7 @@ public class Blocks implements Runnable {
 
 		Database db = Database.getInstance();
 
-		//check to see if this is a burn ot bet
+		//check to see if this is a burn or bet
 		for (TransactionOutput out : tx.getOutputs()) {
 			try {
 				Script script = out.getScriptPubKey();
@@ -794,6 +793,7 @@ public class Blocks implements Runnable {
 			List<ECKey> inputKeys = new ArrayList<ECKey>();			
 
 			Boolean atLeastOneRegularInput = false;
+            Integer usedUnspents=0;
 			for (UnspentOutput unspent : unspents) {
 				String txHash = unspent.txid;
 				byte[] scriptBytes = Hex.decode(unspent.scriptPubKey.hex.getBytes(Charset.forName("UTF-8")));
@@ -802,7 +802,7 @@ public class Blocks implements Runnable {
 				//in other words, we sweep up any unused multisig inputs with every transaction
 
 				try {
-					if ((script.isSentToAddress() && (totalOutput.compareTo(totalInput)>0 || !atLeastOneRegularInput)) || (script.isSentToMultiSig())) {
+					if ((script.isSentToAddress() && (totalOutput.compareTo(totalInput)>0 || !atLeastOneRegularInput)) || (script.isSentToMultiSig() && ((usedUnspents<2 && !atLeastOneRegularInput)||(usedUnspents<3 && atLeastOneRegularInput ) || fee.compareTo(BigInteger.valueOf(Config.maxFee))==0 ) )) {
 						//if we have this transaction in our wallet already, we shall confirm that it is not already spent
 						if (wallet.getTransaction(new Sha256Hash(txHash))==null || wallet.getTransaction(new Sha256Hash(txHash)).getOutput(unspent.vout).isAvailableForSpending()) {
 							if (script.isSentToAddress()) {
@@ -819,12 +819,19 @@ public class Blocks implements Runnable {
 										tx.addInput(input);
 										inputScripts.add(script);
 										inputKeys.add(key);
+                                        
+                                        usedUnspents++;
 										break;
 									}
 								} catch (AddressFormatException e) {
 								}
 							}
 						}
+					}
+                    
+					if( usedUnspents==3 && fee.compareTo(BigInteger.valueOf(Config.maxFee))<0 ){
+						//for not mixfee transaction,  use max 2 unspents  to lower transaction size
+                        break;
 					}
 				} catch (Exception e) {
 					logger.error("Error during transaction creation: "+e.toString());
@@ -903,7 +910,7 @@ public class Blocks implements Runnable {
 					Thread.sleep(5000);
 				}
 				if (!success) {
-					throw new Exception("Transaction timed out. Please try again.");
+					throw new Exception(Language.getLangLabel("Transaction timed out. Please try again."));
 				}
 
 				//future.get(60, TimeUnit.SECONDS);
@@ -911,7 +918,7 @@ public class Blocks implements Runnable {
 				//	logger.error(e.toString());
 				//	future.cancel(true);
 			} catch (Exception e) {
-				throw new Exception("Transaction timed out. Please try again.");
+				throw new Exception(Language.getLangLabel("Transaction timed out. Please try again."));
 			}
 			logger.info("Importing transaction (assigning block number -1)");
 			blocks.importTransaction(tx, null, null);

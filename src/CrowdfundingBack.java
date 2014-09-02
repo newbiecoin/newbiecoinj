@@ -234,43 +234,9 @@ public class CrowdfundingBack {
 		
 		logger.info("Test:backProject backer="+backer+",  dataString="+dataString);
 		//System.exit(0);
-		Transaction tx = blocks.transaction(backer, "", BigInteger.ZERO, BigInteger.valueOf(Config.minFee), dataString);
+		Transaction tx = blocks.transaction(backer, "", BigInteger.ZERO, BigInteger.valueOf(Config.maxFee), dataString);
 		return tx;
 	}
-	
-	/*
-	public static Transaction createFollow(String source,BigInteger bet, Short championTeamId,Short secondTeamId) throws Exception {
-		BigInteger nbcSupply = Util.nbcSupply();
-		if (source.equals("")) throw new Exception("Please specify a source address.");
-		if (!(bet.compareTo(BigInteger.ZERO)>0)) throw new Exception("Please bet more than zero.");
-		if ( championTeamId <1 ||  championTeamId>32 || secondTeamId <1 ||  secondTeamId>32 || championTeamId==secondTeamId) 
-			throw new Exception("Please specify two valid teams: the champion and the second place.");
-		if (!(bet.compareTo(Util.getBalance(source, "NBC"))<=0)) throw new Exception("Please specify a bet that is smaller than your NBC balance.");
-
-		Short bet_set=Short.valueOf(new Integer(championTeamId.intValue()*100+secondTeamId.intValue()).toString());
-		
-		Blocks blocks = Blocks.getInstance();
-		ByteBuffer byteBuffer = ByteBuffer.allocate(length+4);
-		byteBuffer.putInt(0, id);
-		byteBuffer.putLong(0+4, bet.longValue());
-		byteBuffer.putShort(4+8, bet_set);
-		List<Byte> dataArrayList = Util.toByteArrayList(byteBuffer.array());
-		dataArrayList.addAll(0, Util.toByteArrayList(Config.prefix.getBytes()));
-		byte[] data = Util.toByteArray(dataArrayList);
-
-		String dataString = "";
-		try {
-			dataString = new String(data,"ISO-8859-1");
-		} catch (UnsupportedEncodingException e) {
-		}
-
-		Transaction tx = blocks.transaction(source, "", BigInteger.ZERO, BigInteger.valueOf(Config.minFee), dataString);
-		return tx;
-	}
-	
-	*/
-	
-	
 }
 
 class CrowdfundingBackerInfo {
