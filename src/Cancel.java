@@ -84,7 +84,7 @@ public class Cancel {
 					byteBuffer.putInt(0, id);
 					for (int i = 0; i<offerHashBytes.length; i++) byteBuffer.put(0+4+i, offerHashBytes[i]);
 					List<Byte> dataArrayList = Util.toByteArrayList(byteBuffer.array());
-					dataArrayList.addAll(0, Util.toByteArrayList(Config.prefix.getBytes()));
+					dataArrayList.addAll(0, Util.toByteArrayList(Config.newb_prefix.getBytes()));
 					byte[] data = Util.toByteArray(dataArrayList);
 	
 					String dataString = "";

@@ -135,7 +135,7 @@ public class BetWorldCup {
 
 	public static List<BetWorldCupInfo> getPending(String source) {
 		Database db = Database.getInstance();
-		ResultSet rs = db.executeQuery("select * from transactions where block_index<0 and source='"+source+"' and destination='' order by tx_index desc;");
+		ResultSet rs = db.executeQuery("select * from transactions where block_index<0 and source='"+source+"' and destination='' and prefix_type=0 order by tx_index desc;");
 		List<BetWorldCupInfo> bets = new ArrayList<BetWorldCupInfo>();
 		Blocks blocks = Blocks.getInstance();
 		try {
@@ -201,7 +201,7 @@ public class BetWorldCup {
 		byteBuffer.putLong(0+4, bet.longValue());
 		byteBuffer.putShort(4+8, bet_set);
 		List<Byte> dataArrayList = Util.toByteArrayList(byteBuffer.array());
-		dataArrayList.addAll(0, Util.toByteArrayList(Config.prefix.getBytes()));
+		dataArrayList.addAll(0, Util.toByteArrayList(Config.newb_prefix.getBytes()));
 		byte[] data = Util.toByteArray(dataArrayList);
 
 		String dataString = "";
@@ -230,7 +230,7 @@ public class BetWorldCup {
 		byteBuffer.putLong(0+4, bet.longValue());
 		byteBuffer.putShort(4+8, bet_set);
 		List<Byte> dataArrayList = Util.toByteArrayList(byteBuffer.array());
-		dataArrayList.addAll(0, Util.toByteArrayList(Config.prefix.getBytes()));
+		dataArrayList.addAll(0, Util.toByteArrayList(Config.newb_prefix.getBytes()));
 		byte[] data = Util.toByteArray(dataArrayList);
 
 		String dataString = "";

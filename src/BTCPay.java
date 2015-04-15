@@ -123,7 +123,7 @@ public class BTCPay {
 					for (int i = 0; i<tx0HashBytes.length; i++) byteBuffer.put(0+4+i, tx0HashBytes[i]);
 					for (int i = 0; i<tx1HashBytes.length; i++) byteBuffer.put(32+4+i, tx1HashBytes[i]);
 					List<Byte> dataArrayList = Util.toByteArrayList(byteBuffer.array());
-					dataArrayList.addAll(0, Util.toByteArrayList(Config.prefix.getBytes()));
+					dataArrayList.addAll(0, Util.toByteArrayList(Config.newb_prefix.getBytes()));
 					byte[] data = Util.toByteArray(dataArrayList);
 	
 					String dataString = "";

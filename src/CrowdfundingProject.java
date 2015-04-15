@@ -117,7 +117,7 @@ public class CrowdfundingProject {
 
 	public static List<CrowdfundingProjectInfo> getPending(String owner) {
 		Database db = Database.getInstance();
-		ResultSet rs = db.executeQuery("select * from transactions where block_index<0 and source='"+owner+"' and destination='' order by tx_index desc;");
+		ResultSet rs = db.executeQuery("select * from transactions where block_index<0 and source='"+owner+"' and destination='' and prefix_type=0 order by tx_index desc;");
 		List<CrowdfundingProjectInfo> projects = new ArrayList<CrowdfundingProjectInfo>();
 		Blocks blocks = Blocks.getInstance();
 		try {
@@ -301,7 +301,7 @@ public class CrowdfundingProject {
 		byteBuffer.put(project_set_byte_array,0,project_set_length);
 			
 		List<Byte> dataArrayList = Util.toByteArrayList(byteBuffer.array());
-		dataArrayList.addAll(0, Util.toByteArrayList(Config.prefix.getBytes()));
+		dataArrayList.addAll(0, Util.toByteArrayList(Config.newb_prefix.getBytes()));
 		byte[] data = Util.toByteArray(dataArrayList);
 
 		String dataString = "";

@@ -398,6 +398,22 @@ public class Util {
 		}
 		return BigInteger.ZERO;
 	}
+	
+	public static BigInteger getReserved(String address, String asset) {
+		Database db = Database.getInstance();
+		Blocks blocks = Blocks.getInstance();
+
+		ResultSet rs = db.executeQuery("select sum(give_amount) as amount from orders  where source='"+address+"' and give_asset='"+asset+"' and validity='valid'");
+		try {
+			if (rs.next()) {
+				return BigInteger.valueOf(rs.getLong("amount"));
+			}
+		} catch (SQLException e) {
+		}
+
+		return BigInteger.ZERO;
+	}
+	
 	public static BigInteger nbcSupply() {
 		Database db = Database.getInstance();
 		ResultSet rs = db.executeQuery("select sum(amount) as amount from balances where asset='NBC';");
@@ -609,19 +625,19 @@ public class Util {
 	*/
 	
 	//Compress string
-	public static String compress(String str) throws IOException {
+	public static String compress(String str) throws Exception {
 		if (str == null || str.length() == 0) {
 		  return str;
 		}
 		ByteArrayOutputStream out = new ByteArrayOutputStream();
 		GZIPOutputStream gzip = new GZIPOutputStream(out);
-		gzip.write(str.getBytes());
+		gzip.write(str.getBytes("UTF-8"));
 		gzip.close();
 		return out.toString("ISO-8859-1");
 	}
 
 	//Uncompress string
-	public static String uncompress(String str) throws IOException {
+	public static String uncompress(String str) throws Exception {
 		if (str == null || str.length() == 0) {
 		  return str;
 		}
@@ -633,7 +649,7 @@ public class Util {
 		while ((n = gunzip.read(buffer)) >= 0) {
 		  out.write(buffer, 0, n);
 		}
-		return out.toString();
+		return out.toString("UTF-8");
 	}
 	
 	public static boolean exportTextToFile(String text, String fileName) {

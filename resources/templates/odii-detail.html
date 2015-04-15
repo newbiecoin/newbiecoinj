@@ -1,0 +1,62 @@
+<#import "template.html" as template>
+<@template.content>
+<#if !success?? >
+<div class="row section">
+    <div class="row section">
+    <table border="0" width="100%">
+    <tr>
+        <#if odii["awaiting_update_tx_index"]??>
+            <td>
+            <h2>${LANG_CONFIRM_THE_BELOW_UPDATE_OF} [${odii["short_odii"]}]:${odii["full_odii"]}</h2></td>
+            <td align="right">
+            </td>
+        <#else>
+            <h2>${LANG_VIEW_THE_DETAIL_OF} ODII[${odii["short_odii"]}]:${odii["full_odii"]}</h2></td>
+            <td align="right">
+            <#if odii["me_updatable"]??>
+            <a class="btn btn-warning btn-lg" role="button" href='/odii-update?odii=${odii["short_odii"]}'>${LANG_UPDATE}...</a>
+            </#if>
+            <#if odii["me_transable"]??>
+            <a class="btn btn-danger btn-lg" role="button" href='/odii-trans?odii=${odii["short_odii"]}'>${LANG_TRANSFER_REGISTER}...</a>
+            </#if>
+            </td>
+        </#if>
+    </tr>
+    </table>
+    </div>
+    <ul>
+    <li>${LANG_ODII_OWNER_ADDRESS} : ${odii["owner"]}</li>
+    <li>${LANG_ODII_TITLE} : ${odii["title"]}
+    <li>${LANG_EMAIL} : ${odii["email"]}</li>
+
+    <li>${LANG_ODII_AP}</li>
+    <ul>
+    <#if odii["ap1_url"]??><li>${odii["ap1_url"]}</li></#if>
+    <#if odii["ap2_url"]??><li>${odii["ap2_url"]}</li></#if>
+    <#if odii["ap3_url"]??><li>${odii["ap3_url"]}</li></#if>
+    <#if odii["ap4_url"]??><li>${odii["ap4_url"]}</li></#if>
+    <#if odii["ap5_url"]??><li>${odii["ap5_url"]}</li></#if>
+    </ul>
+
+    <li>${LANG_ODII_AUTHORITY} : <#if odii["auth"]="0">${LANG_THE_REGISTER_OR_OWNER_CAN_UPDATE}</#if><#if odii["auth"]="1">${LANG_ONLY_THE_REGISTER_CAN_UPDATE}</#if><#if odii["auth"]="2">${LANG_REGISTER_AND_OWNER_MUST_UPDATE_TOGETHER}</#if></li>
+    
+    <li>${LANG_ODII_REGISTER_ADDRESS} : ${odii["register"]}</li>
+    </ul>
+    <#if odii["awaiting_update_tx_index"]??>
+    <form action="/odii-detail" class="form-inline" method="post">
+    <input type="hidden" name="form" value='awaiting-update'>
+    <input type="hidden" name="odii" value='${odii["short_odii"]}'>
+    <input type="hidden" name="awaiting_update_tx_index" value='${odii["awaiting_update_tx_index"]}'>
+    <input type="hidden" name="confirm" value='1'>
+    <div class="input-group">
+        <span>&nbsp;&nbsp;&nbsp;&nbsp;</span>
+        <span class="input-group-btn">
+            <button class="btn btn-danger btn-lg" type="submit"  onclick="this.innerHTML='${LANG_CLICKED_WAITING}';this.disabled=true;form.submit();" <#if !own??>disabled="disabled"</#if>>${LANG_CONFIRM_THE_UPDATE}</button>
+        </span>
+    </div>
+    </form>
+    </#if>
+</div>
+</#if>
+
+</@template.content>

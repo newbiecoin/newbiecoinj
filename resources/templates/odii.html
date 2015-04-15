@@ -1,0 +1,243 @@
+<#import "template.html" as template>
+<@template.content>
+		<div class="row section">
+			<table border="0" width="100%">
+			<tr>
+				<td><h2>${LANG_ODII}(Open Data Index Identifier)</h2></td>
+				<td align="right"><a class="btn btn-warning btn-lg" role="button" href="/odii-add">${LANG_REGIST_NEW_ODII}...</a></td>
+			</tr>
+			</table>
+		</div>
+		<div class="row section padding-top">
+		    <ul id="tabs" class="nav nav-tabs" data-tabs="tabs">
+				<li class="active"><a href="#recent_odiis" data-toggle="tab">${LANG_RECENT_ODIIS}</a></li>
+				<li><a href="#my_registed_odiis" data-toggle="tab">${LANG_MY_REGISTED_ODIIS}</a></li>
+				<li><a href="#my_owned_odiis" data-toggle="tab">${LANG_MY_OWNED_ODIIS}</a></li>
+                <li><a href="#my_update_logs" data-toggle="tab">${LANG_MY_UPDATE_LOGS}</a></li>
+		    </ul>
+
+		    <div id="my-tab-content" class="tab-content">
+		        <div class="tab-pane active" id="recent_odiis">
+					<table class="table table-striped">
+						<thead>
+							<tr>
+								<th>${LANG_FULL_ODII}</th>
+								<th>${LANG_SHORT_ODII}</th>
+								<th>${LANG_TIME}</th>
+								<th>${LANG_ODII_TITLE}</th>
+								<th>${LANG_OWNER_REGISTER}</th>
+								<th>${LANG_AP_LIST}</th>
+								<th>${LANG_STATUS}</th>
+							</tr>
+						</thead>
+
+						<tbody>
+							<#if my_pending_odiis??>
+							<#list my_pending_odiis as odii>
+								<tr>
+									<td>${LANG_PENDING}</td>
+									<td>${LANG_PENDING}</td>
+									<td>${LANG_PENDING}</td>
+									<td>${odii["title"]}</td>
+									<td>
+                                    Owned by ${odii["email"]} <a href="/wallet?address=${odii["owner"]}">${odii["owner"]}</a><br>
+                                    Registed by <a href="/wallet?address=${odii["register"]}">${odii["register"]}</a>
+                                    </td>
+									<td>${odii["ap_list_debug"]}</td>
+									<td>${LANG_PENDING}
+									</td>
+								</tr>
+							</#list>
+							</#if>
+							
+							<#if recent_odiis??>
+							<#list recent_odiis as odii>
+								<tr>
+									<td><a href='/odii-detail?odii=${odii["short_odii"]}'>${odii["full_odii"]}</a></td>
+                                    <td><a href='/odii-detail?odii=${odii["short_odii"]}'>${odii["short_odii"]}</a></td>
+								    <td><a href="https://blockchain.info/block-index/${odii["block_index"]}/">${odii["block_time"]}</a></td>
+									<td>${odii["title"]}</td>
+									<td>
+                                    Owned by ${odii["email"]} <a href="/wallet?address=${odii["owner"]}">${odii["owner"]}</a><br>
+                                    Registed by <a href="/wallet?address=${odii["register"]}">${odii["register"]}</a>
+                                    </td>
+									<td>${odii["ap_list_debug"]}</td>
+									<td>
+										${odii["validity"]}<br>
+                                        <#if odii["me_updatable"]??>
+                                        <a class="btn btn-warning" role="button" href='/odii-update?odii=${odii["short_odii"]}'>${LANG_UPDATE}...</a><br>
+                                        </#if>
+									</td>
+								</tr>
+							</#list>
+							</#if>
+						</tbody>
+					</table>
+				</div>
+
+				<div class="tab-pane" id="my_registed_odiis">
+					<table class="table table-striped">
+					<thead>
+						<tr>
+							<th>${LANG_FULL_ODII}</th>
+							<th>${LANG_SHORT_ODII}</th>
+							<th>${LANG_TIME}</th>
+							<th>${LANG_ODII_TITLE}</th>
+                            <th>${LANG_OWNER_REGISTER}</th>
+                            <th>${LANG_AP_LIST}</th>
+							<th>${LANG_STATUS}</th>
+						</tr>
+					</thead>
+
+					<tbody>
+						<#if my_pending_odiis??>
+						<#list my_pending_odiis as odii>
+							<tr>
+								<td>${LANG_PENDING}</td>
+								<td>${LANG_PENDING}</td>
+								<td>${LANG_PENDING}</td>
+								<td>${odii["title"]}</td>
+                                <td>
+                                Owned by ${odii["email"]} <a href="/wallet?address=${odii["owner"]}">${odii["owner"]}</a><br>
+                                Registed by <a href="/wallet?address=${odii["register"]}">${odii["register"]}</a>
+                                </td>
+                                <td>${odii["ap_list_debug"]}</td>
+								<td>${LANG_PENDING}
+								</td>
+							</tr>
+						</#list>
+						</#if>
+						
+						<#if my_registed_odiis??>
+						<#list my_registed_odiis as odii>
+							<tr>
+                                <td><a href='/odii-detail?odii=${odii["short_odii"]}'>${odii["full_odii"]}</a></td>
+                                <td><a href='/odii-detail?odii=${odii["short_odii"]}'>${odii["short_odii"]}</a></td>
+								<td><a  href="https://blockchain.info/block-index/${odii["block_index"]}/">${odii["block_time"]}</a></td>
+								<td>${odii["title"]}</td>
+                                <td>
+                                Owned by ${odii["email"]} <a href="/wallet?address=${odii["owner"]}">${odii["owner"]}</a><br>
+                                Registed by <a href="/wallet?address=${odii["register"]}">${odii["register"]}</a>
+                                </td>
+                                <td>${odii["ap_list_debug"]}</td>
+								<td>
+									${odii["validity"]}
+                                    <br>
+                                    <#if odii["me_updatable"]??>
+                                    <a class="btn btn-warning" role="button" href='/odii-update?odii=${odii["short_odii"]}'>${LANG_UPDATE}...</a><br>
+                                    </#if>
+								</td>
+							</tr>
+						</#list>
+						</#if>
+					</tbody>
+					</table>
+				</div>
+				
+				<div class="tab-pane" id="my_owned_odiis">
+					<table class="table table-striped">
+						<thead>
+							<tr>
+								<th>${LANG_FULL_ODII}</th>
+								<th>${LANG_SHORT_ODII}</th>
+								<th>${LANG_TIME}</th>
+								<th>${LANG_ODII_TITLE}</th>
+                                <th>${LANG_OWNER_REGISTER}</th>
+                                <th>${LANG_AP_LIST}</th>
+								<th>${LANG_STATUS}</th>
+							</tr>
+						</thead>
+
+						<tbody>
+							<#if my_owned_odiis??>
+							<#list my_owned_odiis as odii>
+								<tr>
+									<td><a href='/odii-detail?odii=${odii["short_odii"]}'>${odii["full_odii"]}</a></td>
+                                    <td><a href='/odii-detail?odii=${odii["short_odii"]}'>${odii["short_odii"]}</a></td>
+                                    <td><a  href="https://blockchain.info/block-index/${odii["block_index"]}/">${odii["block_time"]}</a></td>
+									<td>${odii["title"]}</td>
+									<td>
+                                    Owned by ${odii["email"]} <a href="/wallet?address=${odii["owner"]}">${odii["owner"]}</a><br>
+                                    Registed by <a href="/wallet?address=${odii["register"]}">${odii["register"]}</a>
+                                    </td>
+									<td>${odii["ap_list_debug"]}</td>
+									<td>
+										${odii["validity"]}<br>
+                                        <#if odii["me_updatable"]??>
+                                        <a class="btn btn-warning" role="button" href='/odii-update?odii=${odii["short_odii"]}'>${LANG_UPDATE}...</a><br>
+                                        </#if>
+                                        
+									</td>
+								</tr>
+							</#list>
+							</#if>
+						</tbody>
+					</table>
+				</div>
+                
+                <div class="tab-pane" id="my_update_logs">
+					<table class="table table-striped">
+						<thead>
+							<tr>
+								<th>${LANG_FULL_ODII}</th>
+								<th>${LANG_SHORT_ODII}</th>
+								<th>${LANG_TIME}</th>
+								<th>${LANG_UPDATE_DESC}</th>
+								<th>${LANG_STATUS}</th>
+							</tr>
+						</thead>
+
+						<tbody>
+							<#if my_pending_update_logs??>
+							<#list my_pending_update_logs as odii>
+								<tr>
+									<td><a href='/odii-detail?odii=${odii["short_odii"]}'>${odii["full_odii"]}</a></td>
+                                    <td><a href='/odii-detail?odii=${odii["short_odii"]}'>${odii["short_odii"]}</a></td>
+									<td>${LANG_PENDING}</td>
+									<td>${odii["update_desc"]}</td>
+									<td>${LANG_PENDING}
+									</td>
+								</tr>
+							</#list>
+							</#if>
+                            
+                            <#if my_awaiting_updates??>
+							<#list my_awaiting_updates as odii>
+								<tr>
+									<td><a href='/odii-detail?odii=${odii["short_odii"]}'>${odii["full_odii"]}</a></td>
+                                    <td><a href='/odii-detail?odii=${odii["short_odii"]}'>${odii["short_odii"]}</a></td>
+								    <td><a href="https://blockchain.info/block-index/${odii["block_index"]}/">${odii["block_time"]}</a></td>
+									<td>${odii["update_desc"]}</td>
+									<td>
+										${odii["validity"]}<br>
+                                        <#if odii["awaiting_my_confirm"]??>
+                                        <a class="btn btn-danger" role="button" href='/odii-detail?odii=${odii["short_odii"]}&awaiting_update_tx_index=${odii["tx_index"]}'>${LANG_AWAIT_YOUR_CONFIRM}...</a>
+                                        </#if>
+									</td>
+								</tr>
+							</#list>
+							</#if>
+							
+							<#if my_update_logs??>
+							<#list my_update_logs as odii>
+								<tr>
+									<td><a href='/odii-detail?odii=${odii["short_odii"]}'>${odii["full_odii"]}</a></td>
+                                    <td><a href='/odii-detail?odii=${odii["short_odii"]}'>${odii["short_odii"]}</a></td>
+								    <td><a href="https://blockchain.info/block-index/${odii["block_index"]}/">${odii["block_time"]}</a></td>
+									<td>
+                                    ${odii["update_desc"]}
+                                    <hr>
+                                    <p align="right">Update by  ${odii["updater"]}</p>
+                                    </td>
+									<td>
+										${odii["validity"]}
+									</td>
+								</tr>
+							</#list>
+							</#if>
+						</tbody>
+					</table>
+				</div>
+		</div>
+
+</@template.content>

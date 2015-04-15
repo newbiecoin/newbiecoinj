@@ -1,0 +1,83 @@
+<#import "template.html" as template>
+<@template.content>
+<#if !success??  && !error??>
+<div class="row section">
+    <div class="row section">
+    <table border="0" width="100%">
+    <tr>
+        <td><h2>${LANG_UPDATE_THE_OWNER_SET_OF} ODII[${odii["short_odii"]}]:${odii["full_odii"]}</h2></td>
+        <td align="right">
+        <#if odii["me_transable"]??>
+        <a class="btn btn-danger btn-lg" role="button" href='/odii-trans?odii=${odii["short_odii"]}'>${LANG_TRANSFER_REGISTER}...</a>
+        </#if>
+        </td>
+    </tr>
+    </table>
+    </div>
+    <form action="/odii-update" class="form-inline" method="post">
+            <input type="hidden" name="form" value="update-odii">
+            <input type="hidden" name="odii" value="${odii["short_odii"]}">
+            <input type="hidden" name="updater" value="${address}">
+            
+            <div class="input-group">
+                <span class="input-group-addon">${LANG_ODII_OWNER_ADDRESS}</span>
+                <input type="text" placeholder="${LANG_ODII_OWNER_ADDRESS}" name="owner" value="${odii["owner"]}" size="40">
+            </div>
+
+            <div class="input-group">
+                <span class="input-group-addon">${LANG_ODII_TITLE}</span>
+                <input type="text" placeholder="${LANG_ODII_TITLE}" name="title" value="${odii["title"]}"  size="35">
+            </div>
+            
+            <div class="input-group">
+                <span class="input-group-addon">${LANG_EMAIL}(${LANG_OPTIONAL})</span>
+                <input type="text" placeholder="${LANG_THE_PUBLIC_EMAIL_FOR}" name="email" value="${odii["email"]}"  size="35">
+            </div>
+            
+            <div class="input-group">
+                <span class="input-group-addon">${LANG_ODII_AP} 1:</span>
+                <input type="text" placeholder="${LANG_ODII_AP_URL_SHOULD_BE}" name="ap1_url" value="<#if odii["ap1_url"]??>${odii["ap1_url"]}</#if>"  size="30">
+            </div>
+            
+            <div class="input-group">
+                <span class="input-group-addon">${LANG_ODII_AP} 2(${LANG_OPTIONAL})</span>
+                <input type="text" placeholder="${LANG_ODII_AP_URL_SHOULD_BE}" name="ap2_url" value="<#if odii["ap2_url"]??>${odii["ap2_url"]}</#if>"  size="30">
+            </div>
+            
+            <div class="input-group">
+                <span class="input-group-addon">${LANG_ODII_AP} 3(${LANG_OPTIONAL})</span>
+                <input type="text" placeholder="${LANG_ODII_AP_URL_SHOULD_BE}" name="ap3_url" value="<#if odii["ap3_url"]??>${odii["ap3_url"]}</#if>"  size="30">
+            </div>
+            
+            <div class="input-group">
+                <span class="input-group-addon">${LANG_ODII_AP} 4(${LANG_OPTIONAL})</span>
+                <input type="text" placeholder="${LANG_ODII_AP_URL_SHOULD_BE}" name="ap4_url" value="<#if odii["ap4_url"]??>${odii["ap4_url"]}</#if>"  size="30">
+            </div>
+            
+            <div class="input-group">
+                <span class="input-group-addon">${LANG_ODII_AP} 5(${LANG_OPTIONAL})</span>
+                <input type="text" placeholder="${LANG_ODII_AP_URL_SHOULD_BE}" name="ap5_url" value="<#if odii["ap5_url"]??>${odii["ap5_url"]}</#if>"  size="30">
+            </div>
+            
+            <div class="input-group">
+                <span class="input-group-addon">${LANG_ODII_AUTHORITY}</span>
+                <select name="auth" id="auth">
+                    <option value="0" <#if odii["auth"]="0">selected="selected"</#if>>${LANG_THE_REGISTER_OR_OWNER_CAN_UPDATE}</option>
+                    <option value="1" <#if odii["auth"]="1">selected="selected"</#if>>${LANG_ONLY_THE_REGISTER_CAN_UPDATE}</option>
+                    <option value="2" <#if odii["auth"]="2">selected="selected"</#if>>${LANG_REGISTER_AND_OWNER_MUST_UPDATE_TOGETHER}</option>
+                </select>
+            </div>
+            
+            <div class="input-group">
+                <span>&nbsp;&nbsp;&nbsp;&nbsp;</span>
+                <span class="input-group-btn">
+                    <button class="btn btn-warning btn-lg" type="submit"  onclick="this.innerHTML='${LANG_CLICKED_WAITING}';this.disabled=true;form.submit();" <#if !own??>disabled="disabled"</#if>>${LANG_UPDATE_IT}</button>
+                </span>
+            </div>
+    </form>
+    <hr>
+    
+</div>
+</#if>
+
+</@template.content>

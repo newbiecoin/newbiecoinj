@@ -86,14 +86,22 @@ public class Server implements Runnable {
 				attributes.put("own", true);
 			}
 		}
+		
+		attributes.put("balanceNBC", Util.getBalance(address, "NBC").doubleValue() / Config.nbc_unit.doubleValue());
+		attributes.put("balanceBTC", Util.getBalance(address, "BTC").doubleValue() / Config.btc_unit.doubleValue());
+		
+		attributes.put("reservedNBC", Util.getReserved(address, "NBC").doubleValue() / Config.nbc_unit.doubleValue());
+		attributes.put("reservedBTC", Util.getReserved(address, "BTC").doubleValue() / Config.btc_unit.doubleValue());
         
         attributes.put("LANG_NEWBIECOIN", Language.getLangLabel("Newbiecoin"));
         attributes.put("LANG_CROWDFUNDING", Language.getLangLabel("Crowdfunding"));
         attributes.put("LANG_CASINO", Language.getLangLabel("Casino"));
         attributes.put("LANG_EXCHANGE", Language.getLangLabel("Exchange"));
+		attributes.put("LANG_ODII", Language.getLangLabel("ODII"));
         attributes.put("LANG_WALLET", Language.getLangLabel("Wallet"));
         attributes.put("LANG_TECHNICAL", Language.getLangLabel("Technical"));
         attributes.put("LANG_COMMUNITY", Language.getLangLabel("Community"));
+		attributes.put("LANG_FREECOIN", Language.getLangLabel("FreeCoin"));
         
         attributes.put("LANG_BLOCKS", Language.getLangLabel("blocks"));
         attributes.put("LANG_VERSION", Language.getLangLabel("Version"));
@@ -177,7 +185,7 @@ public class Server implements Runnable {
                     attributes.put("news_url", Config.newsUrl);
 				
 				//Only for test
-				if(Config.testNet && Config.appName.equals("NewbiecoinBeta") &&  Config.prefix.equals("NEWBIECO") ){
+				if(Config.testNet && Config.appName.equals("NewbiecoinBeta") &&  Config.newb_prefix.equals("NEWBIECO") ){
 					logger.info(" === giveaway for test === ");
 					//Init a giveaway 10000000NEWB only for beta test
 					for (String addr : Util.getAddresses()) {
@@ -302,6 +310,22 @@ public class Server implements Runnable {
 				attributes = updateCommonStatus(request, attributes);
 				attributes.put("title", "Participate");
 				return modelAndView(attributes, "participate.html");
+			}
+		});
+		get(new FreeMarkerRoute("/freecoin") {
+			@Override
+			public ModelAndView handle(Request request, Response response) {
+				setConfiguration(configuration);
+				Map<String, Object> attributes = new HashMap<String, Object>();
+				request.session(true);
+
+				attributes = updateCommonStatus(request, attributes);
+				attributes.put("title", "FreeCoin");
+                
+				attributes.put("LANG_COPY_THE_URL_BELOW", Language.getLangLabel("Please copy the URL below , then open it in the browser software such as Chrome ,IE, Safari or Firefox. "));  
+				attributes.put("LANG_YOUR_BITCOIN_NEWBIECOIN_ADDRESS", Language.getLangLabel("Your Bitcoin/Newbiecoin address"));  
+				
+				return modelAndView(attributes, "freecoin.html");
 			}
 		});
 		get(new FreeMarkerRoute("/community") {
@@ -591,6 +615,149 @@ public class Server implements Runnable {
 				return modelAndView(attributes, "crowdfunding-detail.html");
 			}
 		});	
+		
+		post(new FreeMarkerRoute("/odii") {
+			@Override
+			public ModelAndView handle(Request request, Response response) {
+				setConfiguration(configuration);
+				Map<String, Object> attributes = handleOdiiRequest(request);
+				return modelAndView(attributes, "odii.html");
+			}
+		});
+		get(new FreeMarkerRoute("/odii") {
+			@Override
+			public ModelAndView handle(Request request, Response response) {
+				setConfiguration(configuration);
+				Map<String, Object> attributes = handleOdiiRequest(request);
+				return modelAndView(attributes, "odii.html");
+			}
+		});
+		get(new FreeMarkerRoute("/odii-add") {
+			@Override
+			public ModelAndView handle(Request request, Response response) {
+				setConfiguration(configuration);
+				Map<String, Object> attributes = new HashMap<String, Object>();
+				request.session(true);
+				attributes = updateCommonStatus(request, attributes);
+				attributes.put("title", "Register a new odii");
+
+				try{
+					String address=(String)attributes.get("address");
+
+                    attributes.put("LANG_REGISTE_A_NEW_ODII", Language.getLangLabel("Registe a new ODII"));
+                    attributes.put("LANG_ODII_OWNER_ADDRESS", Language.getLangLabel("Owner BTC address"));
+                    attributes.put("LANG_ODII_TITLE", Language.getLangLabel("ODII title"));
+                    attributes.put("LANG_THE_PUBLIC_EMAIL_FOR", Language.getLangLabel("The public email of the owner"));
+                    attributes.put("LANG_ODII_AP", Language.getLangLabel("Access Point"));
+                    attributes.put("LANG_ODII_AP_URL_SHOULD_BE", Language.getLangLabel("the access point URL"));
+                    attributes.put("LANG_EMAIL", Language.getLangLabel("Email"));  
+                    attributes.put("LANG_ODII_AUTHORITY", Language.getLangLabel("Authority"));  
+                    attributes.put("LANG_THE_REGISTER_OR_OWNER_CAN_UPDATE", Language.getLangLabel("The register or owner can update"));
+                    attributes.put("LANG_ONLY_THE_REGISTER_CAN_UPDATE", Language.getLangLabel("Only the register can update"));
+                    attributes.put("LANG_REGISTER_AND_OWNER_MUST_UPDATE_TOGETHER", Language.getLangLabel("Register and owner must update together"));
+                    
+                    attributes.put("LANG_OPTIONAL", Language.getLangLabel("Optional"));
+                    attributes.put("LANG_REGIST_IT", Language.getLangLabel("Regist it"));  
+                    attributes.put("LANG_CLICKED_WAITING", Language.getLangLabel("Waiting"));  
+                    
+					return modelAndView(attributes, "odii-add.html");
+				}catch(Exception e){
+					return null;
+				}
+			}
+		});
+        post(new FreeMarkerRoute("/odii-detail") {
+			@Override
+			public ModelAndView handle(Request request, Response response) {
+				setConfiguration(configuration);
+				Map<String, Object> attributes = handleOdiiDetailRequest(request);
+				return modelAndView(attributes, "odii-detail.html");
+			}
+		});	
+        get(new FreeMarkerRoute("/odii-detail") {
+			@Override
+			public ModelAndView handle(Request request, Response response) {
+				setConfiguration(configuration);
+				Map<String, Object> attributes = handleOdiiDetailRequest(request);
+				return modelAndView(attributes, "odii-detail.html");
+			}
+		});	
+        post(new FreeMarkerRoute("/odii-update") {
+			@Override
+			public ModelAndView handle(Request request, Response response) {
+				setConfiguration(configuration);
+				Map<String, Object> attributes = handleOdiiUpdateRequest(request);
+				return modelAndView(attributes, "odii-update.html");
+			}
+		});	
+        get(new FreeMarkerRoute("/odii-update") {
+			@Override
+			public ModelAndView handle(Request request, Response response) {
+				setConfiguration(configuration);
+				Map<String, Object> attributes = handleOdiiUpdateRequest(request);
+				return modelAndView(attributes, "odii-update.html");
+			}
+		});	
+        post(new FreeMarkerRoute("/odii-trans") {
+			@Override
+			public ModelAndView handle(Request request, Response response) {
+				setConfiguration(configuration);
+				Map<String, Object> attributes = handleOdiiTransRequest(request);
+				return modelAndView(attributes, "odii-trans.html");
+			}
+		});	
+        get(new FreeMarkerRoute("/odii-trans") {
+			@Override
+			public ModelAndView handle(Request request, Response response) {
+				setConfiguration(configuration);
+				Map<String, Object> attributes = handleOdiiTransRequest(request);
+				return modelAndView(attributes, "odii-trans.html");
+			}
+		});	
+        
+        post(new FreeMarkerRoute("/odii-debug") {
+			@Override
+			public ModelAndView handle(Request request, Response response) {
+				setConfiguration(configuration);
+				Map<String, Object> attributes = handleOdiiDebugRequest(request);
+				return modelAndView(attributes, "odii-debug.html");
+			}
+		});	
+        get(new FreeMarkerRoute("/odii-debug") {
+			@Override
+			public ModelAndView handle(Request request, Response response) {
+				setConfiguration(configuration);
+				Map<String, Object> attributes = new HashMap<String, Object>();
+				request.session(true);
+				attributes = updateCommonStatus(request, attributes);
+				attributes.put("title", "Debug odii");
+
+				try{
+					String address=(String)attributes.get("address");
+
+                    attributes.put("LANG_REGISTE_A_NEW_ODII", Language.getLangLabel("Registe a new ODII"));
+                    attributes.put("LANG_ODII_OWNER_ADDRESS", Language.getLangLabel("Owner BTC address"));
+                    attributes.put("LANG_ODII_TITLE", Language.getLangLabel("ODII title"));
+                    attributes.put("LANG_THE_PUBLIC_EMAIL_FOR", Language.getLangLabel("The public email of the owner"));
+                    attributes.put("LANG_ODII_AP", Language.getLangLabel("Access Point"));
+                    attributes.put("LANG_ODII_AP_URL_SHOULD_BE", Language.getLangLabel("the access point URL"));
+                    attributes.put("LANG_EMAIL", Language.getLangLabel("Email"));  
+                    attributes.put("LANG_ODII_AUTHORITY", Language.getLangLabel("Authority"));  
+                    attributes.put("LANG_THE_REGISTER_OR_OWNER_CAN_UPDATE", Language.getLangLabel("The register or owner can update"));
+                    attributes.put("LANG_ONLY_THE_REGISTER_CAN_UPDATE", Language.getLangLabel("Only the register can update"));
+                    attributes.put("LANG_REGISTER_AND_OWNER_MUST_UPDATE_TOGETHER", Language.getLangLabel("Register and owner must update together"));
+                    
+                    attributes.put("LANG_OPTIONAL", Language.getLangLabel("Optional"));
+                    attributes.put("LANG_REGIST_IT", Language.getLangLabel("Regist it"));  
+                    attributes.put("LANG_CLICKED_WAITING", Language.getLangLabel("Waiting"));  
+                    
+					return modelAndView(attributes, "odii-debug.html");
+				}catch(Exception e){
+					return null;
+				}
+			}
+		});	
+        
 		get(new FreeMarkerRoute("/error") {
 			@Override
 			public ModelAndView handle(Request request, Response response) {
@@ -665,41 +832,92 @@ public class Server implements Runnable {
 				attributes.put("error", Language.getLangLabel(e.getMessage()));
 			}
 		}
-
-		attributes.put("balanceNBC", Util.getBalance(address, "NBC").doubleValue() / Config.nbc_unit.doubleValue());
-		attributes.put("balanceBTC", Util.getBalance(address, "BTC").doubleValue() / Config.btc_unit.doubleValue());
 		
 		Database db = Database.getInstance();
+		
+		attributes.put("order_max_buy_price", "0.00000000");	
+		attributes.put("order_min_sell_price", "0.00000000");	
 		
 		//get buy orders
 		ResultSet rs = db.executeQuery("select (1.0*give_amount/get_amount)/("+Config.btc_unit+"/"+Config.nbc_unit+") as price_btc, get_remaining as quantity,tx_hash from orders where get_asset='NBC' and give_asset='BTC' and validity='valid' and give_remaining>0 and get_remaining>0 order by price_btc desc, quantity desc;");
 		ArrayList<HashMap<String, Object>> ordersBuy = new ArrayList<HashMap<String, Object>>();
 		try {
+			BigInteger sum_order_nbc=BigInteger.ZERO;
 			while (rs.next()) {
 				HashMap<String,Object> map = new HashMap<String,Object>();
 				map.put("quantity", BigInteger.valueOf(rs.getLong("quantity")).doubleValue()/Config.nbc_unit.doubleValue());
 				map.put("price_btc", rs.getDouble("price_btc"));
 				map.put("tx_hash", rs.getString("tx_hash"));
+				sum_order_nbc=sum_order_nbc.add(BigInteger.valueOf(rs.getLong("quantity")));
+				map.put("sum_nbc", sum_order_nbc.doubleValue()/Config.nbc_unit.doubleValue());
+				
+				if(ordersBuy.isEmpty())
+					attributes.put("order_max_buy_price", ""+rs.getDouble("price_btc"));	
 				ordersBuy.add(map);
 			}
 		} catch (SQLException e) {
 		}
-		attributes.put("orders_buy", ordersBuy);				
+		if(!ordersBuy.isEmpty())
+			attributes.put("orders_buy", ordersBuy);	
+
+
+		ArrayList<HashMap<String, Object>> ordersBuyAsc = new ArrayList<HashMap<String, Object>>();
+		for (int kk=ordersBuy.size()-1;kk>=0;kk--) {
+			HashMap<String,Object> map = (HashMap<String,Object>)ordersBuy.get(kk);
+			ordersBuyAsc.add(map);
+		}
+		if(!ordersBuyAsc.isEmpty())
+			attributes.put("orders_buy_asc", ordersBuyAsc);			
 		
 		//get sell orders
-		rs = db.executeQuery("select (1.0*get_amount/give_amount)/("+Config.btc_unit+"/"+Config.nbc_unit+") as price_btc, give_remaining as quantity,tx_hash from orders where give_asset='NBC' and get_asset='BTC' and validity='valid' and give_remaining>0 and get_remaining>0 order by price_btc desc, quantity asc;");
+		rs = db.executeQuery("select (1.0*get_amount/give_amount)/("+Config.btc_unit+"/"+Config.nbc_unit+") as price_btc, give_remaining as quantity,tx_hash from orders where give_asset='NBC' and get_asset='BTC' and validity='valid' and give_remaining>0 and get_remaining>0 order by price_btc asc, quantity asc;");
 		ArrayList<HashMap<String, Object>> ordersSell = new ArrayList<HashMap<String, Object>>();
 		try {
+			BigInteger sum_order_nbc=BigInteger.ZERO;
 			while (rs.next()) {
 				HashMap<String,Object> map = new HashMap<String,Object>();
 				map.put("quantity", BigInteger.valueOf(rs.getLong("quantity")).doubleValue()/Config.nbc_unit.doubleValue());
 				map.put("price_btc", rs.getDouble("price_btc"));
 				map.put("tx_hash", rs.getString("tx_hash"));
+				
+				sum_order_nbc=sum_order_nbc.add(BigInteger.valueOf(rs.getLong("quantity")));
+				map.put("sum_nbc", sum_order_nbc.doubleValue()/Config.nbc_unit.doubleValue());
+				
+				if(ordersSell.isEmpty())
+					attributes.put("order_min_sell_price", ""+rs.getDouble("price_btc"));	
 				ordersSell.add(map);
 			}
 		} catch (SQLException e) {
 		}
-		attributes.put("orders_sell", ordersSell);	
+		if(!ordersSell.isEmpty())
+			attributes.put("orders_sell", ordersSell);	
+		
+		//get latest trades
+		rs = db.executeQuery("select order_matches.*,blocks.block_time from order_matches,blocks where order_matches.validity='valid'  and order_matches.tx1_block_index=blocks.block_index order by tx1_block_index desc, tx1_index desc limit 100;");
+		ArrayList<HashMap<String, Object>> latestTrades = new ArrayList<HashMap<String, Object>>();
+		try {
+			while (rs.next()) {
+				HashMap<String,Object> map = new HashMap<String,Object>();
+				if (rs.getString("forward_asset").equals("BTC")) {
+					map.put("buysell", "Sell");
+					map.put("btc_owed", BigInteger.valueOf(rs.getLong("forward_amount")).doubleValue()/Config.btc_unit.doubleValue());
+					map.put("nbc_return", BigInteger.valueOf(rs.getLong("backward_amount")).doubleValue()/Config.nbc_unit.doubleValue());
+					map.put("price_btc", (BigInteger.valueOf(rs.getLong("forward_amount")).doubleValue()/Config.btc_unit.doubleValue())/BigInteger.valueOf(rs.getLong("backward_amount")).doubleValue()/Config.nbc_unit.doubleValue());
+				} else {
+					map.put("buysell", "Buy");
+					map.put("nbc_return", BigInteger.valueOf(rs.getLong("forward_amount")).doubleValue()/Config.nbc_unit.doubleValue());
+					map.put("btc_owed", BigInteger.valueOf(rs.getLong("backward_amount")).doubleValue()/Config.btc_unit.doubleValue());
+					map.put("price_btc", (BigInteger.valueOf(rs.getLong("backward_amount")).doubleValue()/Config.btc_unit.doubleValue())/(BigInteger.valueOf(rs.getLong("forward_amount")).doubleValue()/Config.nbc_unit.doubleValue()));
+				}
+				map.put("order_match_id", rs.getString("id"));
+				map.put("validity", rs.getString("validity"));
+				map.put("timestamp", rs.getString("block_time"));
+				map.put("date_time", Util.timeFormat(rs.getInt("block_time")));
+				latestTrades.add(map);
+			}
+		} catch (SQLException e) {
+		}
+		attributes.put("latest_trades", latestTrades);	
 
 		//get my order matches
 		rs = db.executeQuery("select * from order_matches where ((tx0_address='"+address+"' and forward_asset='BTC') or (tx1_address='"+address+"' and backward_asset='BTC')) and (validity='pending' or validity='btcpayed')  order by tx0_block_index desc, tx0_index desc;");
@@ -720,7 +938,8 @@ public class Server implements Runnable {
 			}
 		} catch (SQLException e) {
 		}
-		attributes.put("my_order_matches", myOrderMatches);	
+		if(!myOrderMatches.isEmpty())
+			attributes.put("my_order_matches", myOrderMatches);	
 
 		//get my orders
 		//rs = db.executeQuery("select * from orders where source='"+address+"' order by block_index desc, tx_index desc;");
@@ -747,6 +966,7 @@ public class Server implements Runnable {
 				map.put("tx_hash", rs.getString("tx_hash"));
 				map.put("validity", rs.getString("validity"));
 				map.put("has_pending_match", rs.getString("has_pending_match"));
+				map.put("expire_index", rs.getLong("expire_index"));
 				
 				myOrders.add(map);
 			}
@@ -799,6 +1019,8 @@ public class Server implements Runnable {
         attributes.put("LANG_SELL", Language.getLangLabel("Sell"));  
         attributes.put("LANG_QUANTITY_THAT_YOU_WANT_TO_SELL", Language.getLangLabel("quantity that you want to sell"));  
         attributes.put("LANG_MY_ORDERS", Language.getLangLabel("My orders"));  
+		attributes.put("LANG_VALID_UNTIL", Language.getLangLabel("Valid until"));
+		attributes.put("LANG_SIZE", Language.getLangLabel("Size"));
         attributes.put("LANG_BUY_OR_SELL", Language.getLangLabel("Buy/sell"));  
         attributes.put("LANG_STATUS", Language.getLangLabel("Status"));  
         attributes.put("LANG_PENDING", Language.getLangLabel("Pending"));  
@@ -835,7 +1057,26 @@ public class Server implements Runnable {
         attributes.put("LANG_BUY_LOWER", Language.getLangLabel("buy"));  
         attributes.put("LANG_SELL_LOWER", Language.getLangLabel("sell"));  
         attributes.put("LANG_CLICKED_WAITING", Language.getLangLabel("Waiting"));  
+		
+		attributes.put("LANG_TIME", Language.getLangLabel("Time"));
+		attributes.put("LANG_VOLUME", Language.getLangLabel("Volume"));
+		attributes.put("LANG_PRICE_HISTORY", Language.getLangLabel("Price history"));
         
+		attributes.put("LANG_BUY_ORDERS", Language.getLangLabel("Buy Orders (Bids)"));  
+		attributes.put("LANG_SELL_ORDERS", Language.getLangLabel("Sell Orders (Asks)"));  
+		attributes.put("LANG_SUM", Language.getLangLabel("Sum"));  
+		attributes.put("LANG_TIME", Language.getLangLabel("Time"));  
+		attributes.put("LANG_LATEST_TRADES", Language.getLangLabel("Latest trades"));  
+		attributes.put("LANG_YOU_HAVE", Language.getLangLabel("You have"));  
+		attributes.put("LANG_RESERVED_FOR_PENDING_BIDS", Language.getLangLabel("reserved for pending bids"));  
+		attributes.put("LANG_AVAILABLE", Language.getLangLabel("available"));  
+		attributes.put("LANG_BITCOIN", Language.getLangLabel("Bitcoin"));  
+		attributes.put("LANG_MY_HISTORY_ORDERS", Language.getLangLabel("My history orders"));  
+		attributes.put("LANG_SET_PRICE_PER_NEWBIECOIN", Language.getLangLabel("Set price per Newbiecoin"));  
+		attributes.put("LANG_QUANTITY", Language.getLangLabel("Quantity"));
+		attributes.put("LANG_REMAINING_PRESET_QUANTITY", Language.getLangLabel("Remaining/Preset quantity"));
+		
+		
 		return attributes;		
 	}
 	
@@ -2070,4 +2311,701 @@ public class Server implements Runnable {
         
 		return attributes;
 	}
+	
+	public Map<String, Object> handleOdiiRequest(Request request) {
+		Map<String, Object> attributes = new HashMap<String, Object>();
+		request.session(true);
+		attributes = updateCommonStatus(request, attributes);
+		attributes.put("title", "Odii");
+		
+		Blocks blocks = Blocks.getInstance();
+		String address=(String)attributes.get("address");
+		
+		if (request.queryParams().contains("form") && request.queryParams("form").equals("add-odii")) {
+			logger.info("************* do add-odii **************");
+		
+			String register = request.queryParams("register");
+			String owner = request.queryParams("owner_address");
+            String titleStr=request.queryParams("title");
+			String emailStr=request.queryParams("email");
+            String authSet=request.queryParams("auth");
+
+			if(owner.length()>0 && titleStr.length()>0 ){
+				try {
+					Map mapOdiiSet = new HashMap(); 
+                    
+                    mapOdiiSet.put("title", titleStr); 
+                    mapOdiiSet.put("auth", authSet); 
+                    
+					if(register.equals(owner))
+                        owner="";
+				
+					if(emailStr.length()>0)
+						mapOdiiSet.put("email", emailStr); 
+					
+					JSONArray apList = new JSONArray(); 
+					for(int tt=1;tt<=5;tt++){
+						String tmpApUrlStr = request.queryParams("ap"+tt+"_url");
+					
+						if(tmpApUrlStr.length()>0 ){
+							apList.put(tmpApUrlStr);
+						}
+					}
+					
+					if( apList.length()==0 ){
+						attributes.put("error", Language.getLangLabel("Please set at least one valid access point."));
+					} else {
+						mapOdiiSet.put("ap_list", apList); 
+						JSONObject odii_set = new JSONObject(mapOdiiSet); 
+						
+						Transaction tx = Odii.createOdii(register, owner,odii_set);
+						blocks.sendTransaction(register,tx);
+						attributes.put("success", Language.getLangLabel("Your request had been submited. Please wait confirms for at least 1 block."));
+					}
+				} catch (Exception e) {
+					logger.error("************* do add-odii error: "+e.getMessage());
+					attributes.put("error", e.getMessage());
+				}
+			} else {
+				attributes.put("error", Language.getLangLabel("Please input valid owner address,title and AP URLs."));
+			}
+		}
+		
+		Database db = Database.getInstance();
+		
+		ArrayList<HashMap<String, Object>> odiis = new ArrayList<HashMap<String, Object>>();
+		
+		List<OdiiInfo> odiisPending = Odii.getPending(address);
+		logger.info( "\n=============================\n odiisPending.size="+odiisPending.size()+"\n=====================\n");
+		
+		odiis = new ArrayList<HashMap<String, Object>>();
+		for (OdiiInfo odiiInfo : odiisPending) {
+			HashMap<String,Object> map = new HashMap<String,Object>();
+			map.put("full_odii", odiiInfo.fullOdii);
+            map.put("short_odii", odiiInfo.shortOdii);
+			map.put("register", odiiInfo.register);
+			map.put("owner", odiiInfo.owner);
+			map.put("tx_index",odiiInfo.txIndex.toString());
+			map.put("tx_hash", odiiInfo.txHash);
+			map.put("block_index", odiiInfo.blockIndex.toString());
+			map.put("block_time", Util.timeFormat(odiiInfo.blockTime));
+			map.put("validity",odiiInfo.validity);
+
+			try{
+				map=Odii.parseOdiiSet(map,odiiInfo.odiiSet,address,odiiInfo.register,odiiInfo.owner,null);
+				odiis.add(map);
+			}catch (Exception e) {
+				logger.error(e.toString());
+			}
+		}
+		attributes.put("my_pending_odiis", odiis);
+		
+		//get last 100 odiis
+		ResultSet rs = db.executeQuery("select cp.full_odii,cp.short_odii,cp.register,cp.owner ,cp.tx_hash ,cp.tx_index ,cp.block_index,transactions.block_time,cp.odii_set, cp.validity from odiis cp,transactions where cp.tx_index=transactions.tx_index order by cp.block_index desc, cp.tx_index desc limit 100;");
+		odiis = new ArrayList<HashMap<String, Object>>();
+		try {
+			while ( rs.next()) {
+				HashMap<String,Object> map = new HashMap<String,Object>();
+				map.put("full_odii", rs.getString("full_odii"));
+                map.put("short_odii", rs.getString("short_odii"));
+				map.put("register", rs.getString("register"));
+				map.put("owner", rs.getString("owner"));
+				map.put("tx_index", rs.getString("tx_index"));
+				map.put("tx_hash", rs.getString("tx_hash"));
+				map.put("validity", rs.getString("validity"));
+				map.put("block_index", rs.getString("block_index"));
+				map.put("block_time", Util.timeFormat(rs.getInt("block_time")));
+				
+				try{
+					JSONObject odii_set = new JSONObject(rs.getString("odii_set")); 
+					map=Odii.parseOdiiSet(map,odii_set,address,rs.getString("register"),rs.getString("owner"),null);
+					
+					odiis.add(map);
+				}catch (Exception e) {
+					logger.error(e.toString());
+				}
+			}
+		} catch (SQLException e) {
+		}
+		
+		if( !odiis.isEmpty() ){
+			attributes.put("recent_odiis", odiis);
+			//attributes.put("recommand_odii", odiis.get(0));
+		}
+		
+		//get my registed odiis
+		rs = db.executeQuery("select cp.full_odii,cp.short_odii,cp.register,cp.owner ,cp.tx_hash ,cp.tx_index ,cp.block_index,transactions.block_time,cp.odii_set,cp.validity from odiis cp,transactions where cp.register='"+address+"' and cp.tx_index=transactions.tx_index order by cp.block_index desc, cp.tx_index desc limit 100;");
+		odiis = new ArrayList<HashMap<String, Object>>();
+		try {
+			while ( rs.next()) {
+				HashMap<String,Object> map = new HashMap<String,Object>();
+				map.put("full_odii", rs.getString("full_odii"));
+                map.put("short_odii", rs.getString("short_odii"));
+				map.put("register", rs.getString("register"));
+				map.put("owner", rs.getString("owner"));
+				map.put("tx_index", rs.getString("tx_index"));
+				map.put("tx_hash", rs.getString("tx_hash"));
+				map.put("validity", rs.getString("validity"));
+				map.put("block_index", rs.getString("block_index"));
+				map.put("block_time", Util.timeFormat(rs.getInt("block_time")));
+                
+				try{
+					JSONObject odii_set = new JSONObject(rs.getString("odii_set")); 
+					map=Odii.parseOdiiSet(map,odii_set,address,rs.getString("register"),rs.getString("owner"),null);
+
+					odiis.add(map);
+				}catch (Exception e) {
+					logger.error(e.toString());
+				}
+			}
+		} catch (SQLException e) {
+		}
+        
+        attributes.put("my_registed_odiis", odiis);
+        
+        //get my owned odiis
+		rs = db.executeQuery("select cp.full_odii,cp.short_odii,cp.register,cp.owner ,cp.tx_hash ,cp.tx_index ,cp.block_index,transactions.block_time,cp.odii_set,cp.validity from odiis cp,transactions where cp.owner='"+address+"' and cp.tx_index=transactions.tx_index order by cp.block_index desc, cp.tx_index desc limit 100;");
+		odiis = new ArrayList<HashMap<String, Object>>();
+		try {
+			while ( rs.next()) {
+				HashMap<String,Object> map = new HashMap<String,Object>();
+				map.put("full_odii", rs.getString("full_odii"));
+                map.put("short_odii", rs.getString("short_odii"));
+				map.put("register", rs.getString("register"));
+				map.put("owner", rs.getString("owner"));
+				map.put("tx_index", rs.getString("tx_index"));
+				map.put("tx_hash", rs.getString("tx_hash"));
+				map.put("validity", rs.getString("validity"));
+				map.put("block_index", rs.getString("block_index"));
+				map.put("block_time", Util.timeFormat(rs.getInt("block_time")));
+				
+				try{
+					JSONObject odii_set = new JSONObject(rs.getString("odii_set")); 
+					map=Odii.parseOdiiSet(map,odii_set,address,rs.getString("register"),rs.getString("owner"),null);
+					
+					odiis.add(map);
+				}catch (Exception e) {
+					logger.error(e.toString());
+				}
+			}
+		} catch (SQLException e) {
+		}
+		
+		attributes.put("my_owned_odiis", odiis);
+		
+        //get my pending update
+        List<OdiiUpdateInfo> updatePending = OdiiUpdate.getPending(address);
+		logger.info( "\n=============================\n updatePending.size="+updatePending.size()+"\n=====================\n");
+		
+		odiis = new ArrayList<HashMap<String, Object>>();
+		for (OdiiUpdateInfo odiiUpdateInfo : updatePending) {
+			HashMap<String,Object> map = new HashMap<String,Object>();
+			map.put("full_odii", odiiUpdateInfo.fullOdii);
+            map.put("short_odii", odiiUpdateInfo.shortOdii);
+			map.put("updater", odiiUpdateInfo.updater);
+			map.put("tx_index",odiiUpdateInfo.txIndex.toString());
+			map.put("tx_hash", odiiUpdateInfo.txHash);
+			map.put("block_index", odiiUpdateInfo.blockIndex.toString());
+			map.put("block_time", Util.timeFormat(odiiUpdateInfo.blockTime));
+			map.put("validity",odiiUpdateInfo.validity);
+
+			try{
+				map=OdiiUpdate.parseOdiiUpdateSet(map,odiiUpdateInfo.updateSet);
+				odiis.add(map);
+			}catch (Exception e) {
+				logger.error(e.toString());
+			}
+		}
+		attributes.put("my_pending_update_logs", odiis);       
+
+        //get updates that awaiting my confirm or i'm awaiting another confirm
+		rs = db.executeQuery("select l.tx_index, l.block_index,l.updater, l.update_set,l.validity,cp.full_odii,cp.short_odii,cp.register,cp.owner,transactions.block_time,transactions.tx_hash from odiis cp,odii_update_logs l,transactions where l.validity='awaiting' and l.full_odii=cp.full_odii and ( cp.register='"+address+"' or cp.owner='"+address+"') and l.tx_index=transactions.tx_index order by l.block_index desc, cp.tx_index desc limit 100;");
+		odiis = new ArrayList<HashMap<String, Object>>();
+		try {
+			while ( rs.next()) {
+				HashMap<String,Object> map = new HashMap<String,Object>();
+				map.put("full_odii", rs.getString("full_odii"));
+                map.put("short_odii", rs.getString("short_odii"));
+				map.put("updater", rs.getString("updater"));
+				map.put("tx_index", rs.getString("tx_index"));
+				map.put("tx_hash", rs.getString("tx_hash"));
+				map.put("validity", rs.getString("validity"));
+				map.put("block_index", rs.getString("block_index"));
+				map.put("block_time", Util.timeFormat(rs.getInt("block_time")));
+				
+				try{
+					JSONObject update_set = new JSONObject(rs.getString("update_set")); 
+                    map=OdiiUpdate.parseOdiiUpdateSet(map,update_set);
+                    
+                    if(!address.equals(rs.getString("updater")))
+                        map.put("awaiting_my_confirm", true);
+ 					
+					odiis.add(map);
+				}catch (Exception e) {
+					logger.error(e.toString());
+				}
+			}
+		} catch (SQLException e) {
+		}
+        attributes.put("my_awaiting_updates", odiis);
+        
+        //get my end update logs
+		rs = db.executeQuery("select l.tx_index, l.block_index,l.updater, l.update_set,l.validity,cp.full_odii,cp.short_odii,cp.register,cp.owner,transactions.block_time,transactions.tx_hash from odiis cp,odii_update_logs l,transactions where l.updater='"+address+"' and l.full_odii=cp.full_odii and not l.validity='awaiting' and l.tx_index=transactions.tx_index order by l.block_index desc, cp.tx_index desc limit 100;");
+		odiis = new ArrayList<HashMap<String, Object>>();
+		try {
+			while ( rs.next()) {
+				HashMap<String,Object> map = new HashMap<String,Object>();
+				map.put("full_odii", rs.getString("full_odii"));
+                map.put("short_odii", rs.getString("short_odii"));
+				map.put("updater", rs.getString("updater"));
+				map.put("tx_index", rs.getString("tx_index"));
+				map.put("tx_hash", rs.getString("tx_hash"));
+				map.put("validity", rs.getString("validity"));
+				map.put("block_index", rs.getString("block_index"));
+				map.put("block_time", Util.timeFormat(rs.getInt("block_time")));
+				
+				try{
+					JSONObject update_set = new JSONObject(rs.getString("update_set")); 
+                    map=OdiiUpdate.parseOdiiUpdateSet(map,update_set);
+					odiis.add(map);
+				}catch (Exception e) {
+					logger.error(e.toString());
+				}
+			}
+		} catch (SQLException e) {
+		}
+        attributes.put("my_update_logs", odiis);
+        
+        attributes.put("LANG_REGIST_NEW_ODII", Language.getLangLabel("Registe a new ODII"));
+        
+        attributes.put("LANG_RECENT_ODIIS", Language.getLangLabel("Recent ODIIs"));
+        attributes.put("LANG_MY_REGISTED_ODIIS", Language.getLangLabel("My registed ODIIs"));
+        attributes.put("LANG_MY_OWNED_ODIIS", Language.getLangLabel("My owned ODIIs"));
+        attributes.put("LANG_MY_UPDATE_LOGS", Language.getLangLabel("My update logs"));
+        
+        attributes.put("LANG_FULL_ODII", Language.getLangLabel("Full ODII"));
+        attributes.put("LANG_SHORT_ODII", Language.getLangLabel("Short Alias"));
+        attributes.put("LANG_TIME", Language.getLangLabel("Time"));
+        attributes.put("LANG_ODII_TITLE", Language.getLangLabel("ODII title"));
+        attributes.put("LANG_OWNER_REGISTER", Language.getLangLabel("Owner/Register"));
+        attributes.put("LANG_AP_LIST", Language.getLangLabel("Access Point"));
+        attributes.put("LANG_STATUS", Language.getLangLabel("Status"));
+        attributes.put("LANG_UPDATE_DESC", Language.getLangLabel("Update description"));
+        
+        attributes.put("LANG_PENDING", Language.getLangLabel("Pending"));
+        attributes.put("LANG_VALID", Language.getLangLabel("valid"));    
+        attributes.put("LANG_UPDATE", Language.getLangLabel("Update"));      
+        attributes.put("LANG_TRANSFER_REGISTER", Language.getLangLabel("Transfer register"));  
+        attributes.put("LANG_AWAIT_YOUR_CONFIRM", Language.getLangLabel("Awaiting your confirm"));  
+		
+		return attributes;
+	}
+
+    public Map<String, Object> handleOdiiUpdateRequest(Request request) {
+		Map<String, Object> attributes = new HashMap<String, Object>();
+		request.session(true);
+		
+		attributes = updateCommonStatus(request, attributes);
+		attributes.put("title", "Update an ODII");
+		
+		String odii=request.queryParams("odii");
+		if(odii==null){
+            attributes.put("error", "handleOdiiUpdateRequest: no odii.");
+            return attributes;
+		} 
+       
+        Blocks blocks = Blocks.getInstance();
+        String address=(String)attributes.get("address");
+		
+		OdiiInfo odiiInfo=Odii.getOdiiInfo(odii);
+
+		if(odiiInfo==null){
+			attributes.put("error", "handleOdiiUpdateRequest Invalid odii.");
+        }else if (request.queryParams().contains("form") && request.queryParams("form").equals("update-odii")) {
+			logger.info("************* do update-odii **************");
+
+			String owner = request.queryParams("owner");
+            String titleStr=request.queryParams("title");
+			String emailStr=request.queryParams("email");
+            String authSet=request.queryParams("auth");
+
+			if( titleStr.length()>0 ){
+				try {
+                    HashMap<String,Object> map = new HashMap<String,Object>();
+                    map.put("full_odii", odiiInfo.fullOdii);
+                    map.put("short_odii", odiiInfo.shortOdii);
+                    map.put("register", odiiInfo.register);
+                    map.put("owner", owner);
+                    map.put("tx_index",odiiInfo.txIndex.toString());
+                    map.put("tx_hash", odiiInfo.txHash);
+                    map.put("block_index", odiiInfo.blockIndex.toString());
+                    map.put("block_time", Util.timeFormat(odiiInfo.blockTime));
+                    map.put("validity",odiiInfo.validity);
+
+                    JSONObject odii_set = odiiInfo.odiiSet; 
+                    map=Odii.parseOdiiSet(map,odii_set,address,odiiInfo.register,odiiInfo.owner,null);
+                    
+                    map.put("title", titleStr);
+                    map.put("email", emailStr);                     
+                    map.put("auth", authSet); 
+                    
+                    Map mapNewOdiiSet = new HashMap(); 
+                    mapNewOdiiSet.put("title", titleStr); 
+                    mapNewOdiiSet.put("auth", authSet); 
+
+                    if(emailStr.length()>0)
+                        mapNewOdiiSet.put("email", emailStr); 
+                    
+                    JSONArray apList = new JSONArray(); 
+                    for(int tt=1;tt<=5;tt++){
+                        String tmpApUrlStr = request.queryParams("ap"+tt+"_url");
+                    
+                        map.put("ap"+tt+"_url", tmpApUrlStr);
+                        if(tmpApUrlStr.length()>0 ){
+                            apList.put(tmpApUrlStr);
+                        } 
+                    }
+                    
+                    
+                    if( apList.length()==0 ){
+                        attributes.put("error", Language.getLangLabel("Please set at least one valid access point."));
+                    } else {
+                        if(map.containsKey("me_updatable"))
+                        {
+                            mapNewOdiiSet.put("ap_list", apList); 
+                            
+                            JSONObject new_odii_set = new JSONObject(mapNewOdiiSet); 
+                            
+                            Transaction tx = OdiiUpdate.updateOdiiOwnerSet(odiiInfo.fullOdii,address,owner,new_odii_set);
+                            blocks.sendTransaction(address,tx);
+                            attributes.put("success", Language.getLangLabel("Your request had been submited. Please wait confirms for at least 1 block."));
+                        } else {
+                            attributes.put("error", Language.getLangLabel("No permission."));
+                        }
+                    }
+
+                    attributes.put("odii", map);	
+				} catch (Exception e) {
+					logger.error("************* do update-odii error: "+e.getMessage());
+					attributes.put("error", e.getMessage());
+				}
+			} else {
+				attributes.put("error", Language.getLangLabel("Please input valid title."));
+			}
+		} else {	
+			HashMap<String,Object> map = new HashMap<String,Object>();
+			map.put("full_odii", odiiInfo.fullOdii);
+            map.put("short_odii", odiiInfo.shortOdii);
+			map.put("register", odiiInfo.register);
+			map.put("owner", odiiInfo.owner);
+			map.put("tx_index",odiiInfo.txIndex.toString());
+			map.put("tx_hash", odiiInfo.txHash);
+			map.put("block_index", odiiInfo.blockIndex.toString());
+			map.put("block_time", Util.timeFormat(odiiInfo.blockTime));
+			map.put("validity",odiiInfo.validity);
+			
+			try{
+				JSONObject odii_set = odiiInfo.odiiSet; 
+				map=Odii.parseOdiiSet(map,odii_set,address,odiiInfo.register,odiiInfo.owner,null);
+
+				attributes.put("odii", map);		
+			}catch (Exception e) {
+				logger.error(e.toString());
+			}
+		}					
+		
+        attributes.put("LANG_UPDATE_THE_OWNER_SET_OF", Language.getLangLabel("Update the owner set of"));
+
+        attributes.put("LANG_ODII_OWNER_ADDRESS", Language.getLangLabel("Owner BTC address"));
+        attributes.put("LANG_ODII_REGISTER_ADDRESS", Language.getLangLabel("Register BTC address"));
+        
+        attributes.put("LANG_ODII_TITLE", Language.getLangLabel("ODII title"));
+        attributes.put("LANG_THE_PUBLIC_EMAIL_FOR", Language.getLangLabel("The public email of the owner"));
+        attributes.put("LANG_ODII_AP", Language.getLangLabel("Access Point"));
+        attributes.put("LANG_ODII_AP_URL_SHOULD_BE", Language.getLangLabel("the access point URL"));
+        attributes.put("LANG_EMAIL", Language.getLangLabel("Email"));  
+        attributes.put("LANG_ODII_AUTHORITY", Language.getLangLabel("Authority"));    
+        attributes.put("LANG_THE_REGISTER_OR_OWNER_CAN_UPDATE", Language.getLangLabel("The register or owner can update"));
+        attributes.put("LANG_ONLY_THE_REGISTER_CAN_UPDATE", Language.getLangLabel("Only the register can update"));
+        attributes.put("LANG_REGISTER_AND_OWNER_MUST_UPDATE_TOGETHER", Language.getLangLabel("Register and owner must update together"));
+        
+        attributes.put("LANG_OPTIONAL", Language.getLangLabel("Optional"));
+        attributes.put("LANG_UPDATE_IT", Language.getLangLabel("Update it"));  
+        attributes.put("LANG_TRANSFER_REGISTER", Language.getLangLabel("Transfer register"));  
+        attributes.put("LANG_CLICKED_WAITING", Language.getLangLabel("Waiting"));  
+        
+		return attributes;
+	}
+    
+    
+    public Map<String, Object> handleOdiiTransRequest(Request request) {
+		Map<String, Object> attributes = new HashMap<String, Object>();
+		request.session(true);
+		
+		attributes = updateCommonStatus(request, attributes);
+		attributes.put("title", "Transfer an ODII");
+		
+		String odii=request.queryParams("odii");
+		if(odii==null){
+            attributes.put("error", "handleOdiiTransRequest : no odii.");
+            return attributes;
+		} 
+        
+        Blocks blocks = Blocks.getInstance();
+        String address=(String)attributes.get("address");
+		
+		OdiiInfo odiiInfo=Odii.getOdiiInfo(odii);
+
+		if(odiiInfo==null){
+			attributes.put("error", "handleOdiiTransRequest : Invalid odii.");
+        }else if (request.queryParams().contains("form") && request.queryParams("form").equals("trans-register")) {
+			logger.info("************* do trans-register **************");
+
+			String new_register = request.queryParams("new_register");
+
+			if( new_register.length()>0 && !new_register.equals(address) ){
+				try {
+                    HashMap<String,Object> map = new HashMap<String,Object>();
+                    map.put("full_odii", odiiInfo.fullOdii);
+                    map.put("short_odii", odiiInfo.shortOdii);
+                    map.put("register", odiiInfo.register);
+                    map.put("validity",odiiInfo.validity);
+
+                    JSONObject odii_set = odiiInfo.odiiSet; 
+                    map=Odii.parseOdiiSet(map,odii_set,address,odiiInfo.register,odiiInfo.owner,null);
+
+                    if(map.containsKey("me_transable"))
+                    {
+                        Transaction tx = OdiiUpdate.transOdiiRegister(odiiInfo.fullOdii,address,new_register);
+                        blocks.sendTransaction(address,tx);
+                        attributes.put("success", Language.getLangLabel("Your request had been submited. Please wait confirms for at least 1 block."));
+                    } else {
+                        attributes.put("error", Language.getLangLabel("No permission."));
+                    }
+
+                    attributes.put("odii", map);	
+				} catch (Exception e) {
+					logger.error("************* do trans-odii error: "+e.getMessage());
+					attributes.put("error", e.getMessage());
+				}
+			} else {
+				attributes.put("error", Language.getLangLabel("Please input another valid register address."));
+			}
+		} else {	
+			HashMap<String,Object> map = new HashMap<String,Object>();
+			map.put("full_odii", odiiInfo.fullOdii);
+            map.put("short_odii", odiiInfo.shortOdii);
+			map.put("register", odiiInfo.register);
+			map.put("validity",odiiInfo.validity);
+			
+			try{
+				JSONObject odii_set = odiiInfo.odiiSet; 
+				map=Odii.parseOdiiSet(map,odii_set,address,odiiInfo.register,odiiInfo.owner,null);
+
+				attributes.put("odii", map);		
+			}catch (Exception e) {
+				logger.error(e.toString());
+			}
+		}					
+		
+        attributes.put("LANG_TRANSFER_THE_REGISTER_OF", Language.getLangLabel("Transfer the register of"));
+        attributes.put("LANG_ODII_REGISTER_ADDRESS", Language.getLangLabel("Register BTC address"));
+        attributes.put("LANG_ODII_NEW_REGISTER_ADDRESS", Language.getLangLabel("The new register address"));
+        attributes.put("LANG_TRANSFER_REGISTER", Language.getLangLabel("Transfer register"));  
+        attributes.put("LANG_CLICKED_WAITING", Language.getLangLabel("Waiting"));  
+        
+		return attributes;
+	}
+    
+    public Map<String, Object> handleOdiiDetailRequest(Request request) {
+		Map<String, Object> attributes = new HashMap<String, Object>();
+		request.session(true);
+		
+		attributes = updateCommonStatus(request, attributes);
+		attributes.put("title", "Update an ODII");
+		
+		String odii=request.queryParams("odii");
+		if(odii==null){
+            attributes.put("error", "handleOdiiDetailRequest : no odii.");
+            return attributes;
+		} 
+        String awaiting_update_tx_index=request.queryParams("awaiting_update_tx_index");
+        
+        Blocks blocks = Blocks.getInstance();
+        String address=(String)attributes.get("address");
+		
+		OdiiInfo odiiInfo=Odii.getOdiiInfo(odii);
+
+		if(odiiInfo==null){
+			attributes.put("error", "handleOdiiDetailRequest: Invalid odii.");
+        }else if (request.queryParams().contains("form") && request.queryParams("form").equals("awaiting-update")) {
+			logger.info("************* do awaiting-update **************");
+
+			if( awaiting_update_tx_index!=null ){
+				try {
+                    HashMap<String,Object> map = new HashMap<String,Object>();
+                    map.put("full_odii", odiiInfo.fullOdii);
+                    map.put("short_odii", odiiInfo.shortOdii);
+                    map.put("register", odiiInfo.register);
+                    map.put("owner", odiiInfo.owner);
+                    map.put("tx_index",odiiInfo.txIndex.toString());
+                    map.put("tx_hash", odiiInfo.txHash);
+                    map.put("block_index", odiiInfo.blockIndex.toString());
+                    map.put("block_time", Util.timeFormat(odiiInfo.blockTime));
+                    map.put("validity",odiiInfo.validity);
+
+                    map.put("awaiting_update_tx_index",awaiting_update_tx_index);
+
+                    JSONObject odii_set = odiiInfo.odiiSet; 
+                    map=Odii.parseOdiiSet(map,odii_set,address,odiiInfo.register,odiiInfo.owner,awaiting_update_tx_index);
+                    
+                    if(map.containsKey("me_updatable"))
+                    {
+                        String awaiting_update_tx_hash=(String)map.get("awaiting_update_tx_hash");
+                        if(awaiting_update_tx_hash!=null){
+                            JSONObject confirm_update_set=new JSONObject();
+                            confirm_update_set.put("confirm_tx_hash",awaiting_update_tx_hash);
+                            Transaction tx = OdiiUpdate.updateOdiiOwnerSet(odiiInfo.fullOdii,address,(String)map.get("owner"),confirm_update_set);
+                            blocks.sendTransaction(address,tx);
+                            attributes.put("success", Language.getLangLabel("Your request had been submited. Please wait confirms for at least 1 block."));
+                        }else{
+                            attributes.put("error", Language.getLangLabel("Invalid awaiting_update_tx_hash."));
+                        }
+                    } else {
+                        attributes.put("error", Language.getLangLabel("No permission."));
+                    }
+
+                    attributes.put("odii", map);	
+				} catch (Exception e) {
+                    e.printStackTrace();
+					logger.error("************* do update-odii error: "+e.getMessage());
+					attributes.put("error", e.getMessage());
+				}
+			} else {
+				attributes.put("error", Language.getLangLabel("Please input valid update tx_index."));
+			}
+		} else {	
+			HashMap<String,Object> map = new HashMap<String,Object>();
+			map.put("full_odii", odiiInfo.fullOdii);
+            map.put("short_odii", odiiInfo.shortOdii);
+			map.put("register", odiiInfo.register);
+			map.put("owner", odiiInfo.owner);
+			map.put("tx_index",odiiInfo.txIndex.toString());
+			map.put("tx_hash", odiiInfo.txHash);
+			map.put("block_index", odiiInfo.blockIndex.toString());
+			map.put("block_time", Util.timeFormat(odiiInfo.blockTime));
+			map.put("validity",odiiInfo.validity);
+			
+			try{
+				JSONObject odii_set = odiiInfo.odiiSet; 
+				map=Odii.parseOdiiSet(map,odii_set,address,odiiInfo.register,odiiInfo.owner,awaiting_update_tx_index);
+                
+                if(awaiting_update_tx_index!=null)
+                    map.put("awaiting_update_tx_index",awaiting_update_tx_index);
+
+				attributes.put("odii", map);		
+			}catch (Exception e) {
+                e.printStackTrace();
+				logger.error(e.toString());
+			}
+		}					
+
+        attributes.put("LANG_CONFIRM_THE_BELOW_UPDATE_OF", Language.getLangLabel("Confirm the below update of"));
+        attributes.put("LANG_VIEW_THE_DETAIL_OF", Language.getLangLabel("View the detail of"));
+
+        attributes.put("LANG_ODII_OWNER_ADDRESS", Language.getLangLabel("Owner BTC address"));
+        attributes.put("LANG_ODII_REGISTER_ADDRESS", Language.getLangLabel("Register BTC address"));
+        
+        attributes.put("LANG_ODII_TITLE", Language.getLangLabel("ODII title"));
+        attributes.put("LANG_THE_PUBLIC_EMAIL_FOR", Language.getLangLabel("The public email of the owner"));
+        attributes.put("LANG_ODII_AP", Language.getLangLabel("Access Point"));
+        attributes.put("LANG_ODII_AP_URL_SHOULD_BE", Language.getLangLabel("the access point URL"));
+        attributes.put("LANG_EMAIL", Language.getLangLabel("Email"));  
+        attributes.put("LANG_ODII_AUTHORITY", Language.getLangLabel("Authority"));  
+        attributes.put("LANG_THE_REGISTER_OR_OWNER_CAN_UPDATE", Language.getLangLabel("The register or owner can update"));
+        attributes.put("LANG_ONLY_THE_REGISTER_CAN_UPDATE", Language.getLangLabel("Only the register can update"));
+        attributes.put("LANG_REGISTER_AND_OWNER_MUST_UPDATE_TOGETHER", Language.getLangLabel("Register and owner must update together"));
+        
+        attributes.put("LANG_OPTIONAL", Language.getLangLabel("Optional"));
+        attributes.put("LANG_CONFIRM_THE_UPDATE", Language.getLangLabel("Confirm this update")); 
+        attributes.put("LANG_UPDATE", Language.getLangLabel("Update"));          
+        attributes.put("LANG_TRANSFER_REGISTER", Language.getLangLabel("Transfer register"));  
+        attributes.put("LANG_CLICKED_WAITING", Language.getLangLabel("Waiting"));  
+        
+		return attributes;
+	}
+    
+
+    public Map<String, Object> handleOdiiDebugRequest(Request request) {
+		Map<String, Object> attributes = new HashMap<String, Object>();
+		request.session(true);
+		attributes = updateCommonStatus(request, attributes);
+		attributes.put("title", "Odii batch add");
+		
+		Blocks blocks = Blocks.getInstance();
+		String address=(String)attributes.get("address");
+		
+		if (request.queryParams().contains("form") && request.queryParams("form").equals("add-odii-batch")) {
+			logger.info("************* do add-odii-batch **************");
+		
+			String register = request.queryParams("register");
+			String owner = request.queryParams("owner_address");
+            String titleStr=request.queryParams("title");
+			String emailStr=request.queryParams("email");
+            String authSet=request.queryParams("auth");
+            Integer batchNum=Integer.valueOf(request.queryParams("batch_num"));
+
+			if(owner.length()>0 && titleStr.length()>0 && batchNum>0 ){
+				try {
+					Map mapOdiiSet = new HashMap(); 
+                    
+                    mapOdiiSet.put("title", titleStr); 
+                    mapOdiiSet.put("auth", authSet); 
+                    
+					if(register.equals(owner))
+                        owner="";
+				
+					if(emailStr.length()>0)
+						mapOdiiSet.put("email", emailStr); 
+					
+					JSONArray apList = new JSONArray(); 
+					for(int tt=1;tt<=5;tt++){
+						String tmpApUrlStr = request.queryParams("ap"+tt+"_url");
+					
+						if(tmpApUrlStr.length()>0 ){
+							apList.put(tmpApUrlStr);
+						}
+					}
+					
+					if( apList.length()==0 ){
+						attributes.put("error", Language.getLangLabel("Please set at least one valid access point."));
+					} else {
+						mapOdiiSet.put("ap_list", apList); 
+						JSONObject odii_set = new JSONObject(mapOdiiSet); 
+						
+                        String result_str="";
+                        for(int kk=0;kk<batchNum;kk++){
+                            try{
+                                odii_set.put("title", titleStr+"-"+(kk+1)); 
+                                Transaction tx = Odii.createOdii(register, owner,odii_set);
+                                blocks.sendTransaction(register,tx);
+                                result_str+="<li>Request["+kk+"] submited.</li>\n";
+                            }catch(Exception e){
+                                result_str+="<li>Request["+kk+"] failed.("+e.toString()+")</li>\n";
+                            }
+                        }
+						attributes.put("success", result_str);
+					}
+				} catch (Exception e) {
+					logger.error("************* do add-odii error: "+e.getMessage());
+					attributes.put("error", e.getMessage());
+				}
+			} else {
+				attributes.put("error", Language.getLangLabel("Please input valid owner address,title and AP URLs."));
+			}
+		}
+
+		return attributes;
+	}
+    
 }

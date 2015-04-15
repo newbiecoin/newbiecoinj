@@ -224,6 +224,7 @@ public class Blocks implements Runnable {
 				}
 				BetWorldCup.init();
 				CrowdfundingProject.init();
+                Odii.init();
 			} catch (Exception e) {
 				logger.error("Error during init: "+e.toString());
 				e.printStackTrace();
@@ -350,8 +351,10 @@ public class Blocks implements Runnable {
 			if (rs.next()) {
 				Block block = peerGroup.getDownloadPeer().getBlock(new Sha256Hash(rs.getString("block_hash"))).get();
 				db.executeUpdate("delete from transactions where block_index='"+blockHeight.toString()+"';");
+				Integer txSnInBlock=0;
 				for (Transaction tx : block.getTransactions()) {
-					importTransaction(tx, block, blockHeight);
+					importTransaction(tx,txSnInBlock, block, blockHeight);
+					txSnInBlock++;
 				}
 			}
 		} catch (Exception e) {
@@ -368,8 +371,10 @@ public class Blocks implements Runnable {
 			if (!rs.next()) {
 				db.executeUpdate("INSERT INTO blocks(block_index,block_hash,block_time,block_nonce) VALUES('"+blockHeight.toString()+"','"+block.getHashAsString()+"','"+block.getTimeSeconds()+"','"+block.getNonce()+"')");
 			}
+			Integer txSnInBlock=0;
 			for (Transaction tx : block.getTransactions()) {
-				importTransaction(tx, block, blockHeight);
+				importTransaction(tx,txSnInBlock, block, blockHeight);
+				txSnInBlock++;
 			}
 			//Bet.resolve(blockHeight);  //pengding test
 			//BetWorldCup.resolve(blockHeight,new Long(block.getTimeSeconds()).intValue());
@@ -378,107 +383,9 @@ public class Blocks implements Runnable {
 		}
 	}
 
-	public void importTransaction(Transaction tx, Block block, Integer blockHeight) {
-		BigInteger fee = BigInteger.ZERO;
-		String destination = "";
-		BigInteger btcAmount = BigInteger.ZERO;
-		List<Byte> dataArrayList = new ArrayList<Byte>();
-		byte[] data = null;
-		String source = "";
-
-		Database db = Database.getInstance();
-
-		//check to see if this is a burn or bet
-		for (TransactionOutput out : tx.getOutputs()) {
-			try {
-				Script script = out.getScriptPubKey();
-				Address address = script.getToAddress(params);
-				if (address.toString().equals(Config.burnAddressFund) || address.toString().equals(Config.burnAddressDark)) {
-					destination = address.toString();
-					btcAmount = out.getValue();
-				}
-			} catch(ScriptException e) {				
-			}
-		}
-
-		for (TransactionOutput out : tx.getOutputs()) {
-			//fee = fee.subtract(out.getValue()); //TODO, turn this on
-			try {
-				Script script = out.getScriptPubKey();
-				List<ScriptChunk> asm = script.getChunks();
-				if (asm.size()==2 && asm.get(0).equalsOpCode(106)) { //OP_RETURN
-					for (byte b : asm.get(1).data) dataArrayList.add(b);
-				} else if (asm.size()>=5 && asm.get(0).equalsOpCode(81) && asm.get(3).equalsOpCode(82) && asm.get(4).equalsOpCode(174)) { //MULTISIG
-					for (int i=1; i<asm.get(2).data[0]+1; i++) dataArrayList.add(asm.get(2).data[i]);
-				}
-
-				if (destination.equals("") && btcAmount==BigInteger.ZERO && dataArrayList.size()==0) {
-					Address address = script.getToAddress(params);
-					destination = address.toString();
-					btcAmount = out.getValue();					
-				}
-			} catch(ScriptException e) {				
-			}
-		}
-		if (destination.equals(Config.burnAddressFund) || destination.equals(Config.burnAddressDark)) {
-		} else if (dataArrayList.size()>Config.prefix.length()) {
-			byte[] prefixBytes = Config.prefix.getBytes();
-			byte[] dataPrefixBytes = Util.toByteArray(dataArrayList.subList(0, Config.prefix.length()));
-			dataArrayList = dataArrayList.subList(Config.prefix.length(), dataArrayList.size());
-			data = Util.toByteArray(dataArrayList);
-			if (!Arrays.equals(prefixBytes,dataPrefixBytes)) {
-				return;
-			}
-		} else {
-			return;
-		}
-		for (TransactionInput in : tx.getInputs()) {
-			if (in.isCoinBase()) return;
-			try {
-				Script script = in.getScriptSig();
-				//fee = fee.add(in.getValue()); //TODO, turn this on
-				Address address = script.getFromAddress(params);
-				if (source.equals("")) {
-					source = address.toString();
-				}else if (!source.equals(address.toString()) 
-                       && !destination.equals(Config.burnAddressFund)
-                       && !destination.equals(Config.burnAddressDark)
-                ){ //require all sources to be the same unless this is a burn
-					return;
-				}
-			} catch(ScriptException e) {
-			}
-		}
-
-		logger.info("Incoming transaction from "+source+" to "+destination+" ("+tx.getHashAsString()+")");
-
-		if (!source.equals("") && (destination.equals(Config.burnAddressFund) || destination.equals(Config.burnAddressDark) || dataArrayList.size()>0)) {
-			String dataString = "";
-			if (destination.equals(Config.burnAddressFund) || destination.equals(Config.burnAddressDark)) {
-			}else{
-				try {
-					dataString = new String(data,"ISO-8859-1");
-				} catch (UnsupportedEncodingException e) {
-				}
-			}
-			db.executeUpdate("delete from transactions where tx_hash='"+tx.getHashAsString()+"' and block_index<0");
-			ResultSet rs = db.executeQuery("select * from transactions where tx_hash='"+tx.getHashAsString()+"';");
-			try {
-				if (!rs.next()) {
-					if (block!=null) {
-						PreparedStatement ps = db.connection.prepareStatement("INSERT INTO transactions(tx_index, tx_hash, block_index, block_time, source, destination, btc_amount, fee, data) VALUES('"+(Util.getLastTxIndex()+1)+"','"+tx.getHashAsString()+"','"+blockHeight+"','"+block.getTimeSeconds()+"','"+source+"','"+destination+"','"+btcAmount.toString()+"','"+fee.toString()+"',?)");
-						ps.setString(1, dataString);
-						ps.execute();
-					}else{
-						PreparedStatement ps = db.connection.prepareStatement("INSERT INTO transactions(tx_index, tx_hash, block_index, block_time, source, destination, btc_amount, fee, data) VALUES('"+(Util.getLastTxIndex()+1)+"','"+tx.getHashAsString()+"','-1','','"+source+"','"+destination+"','"+btcAmount.toString()+"','"+fee.toString()+"',?)");
-						ps.setString(1, dataString);
-						ps.execute();
-					}
-				}
-			} catch (SQLException e) {
-				logger.error(e.toString());
-			}
-		}
+	public void importTransaction(Transaction tx,Integer txSnInBlock,Block block, Integer blockHeight) {
+		if(!importPPkTransaction(tx,txSnInBlock,block, blockHeight))
+            importNewbcoinTransaction(tx,block, blockHeight);
 	}
 
 	public void reparse() {
@@ -567,6 +474,8 @@ public class Blocks implements Runnable {
 		}
 		return messageType;
 	}	
+    
+    
 
 	public void parseBlock(Integer blockIndex,Integer blockTime) { //Add  blockTime for POS
 		Database db = Database.getInstance();
@@ -581,37 +490,54 @@ public class Blocks implements Runnable {
 				String destination = rsTx.getString("destination");
 				BigInteger btcAmount = BigInteger.valueOf(rsTx.getInt("btc_amount"));
 				String dataString = rsTx.getString("data");
-
-				if (destination.equals(Config.burnAddressFund) || destination.equals(Config.burnAddressDark)) {
-					//parse Burn
-					Burn.parse(txIndex);
-				} else {
-					List<Byte> messageType = getMessageTypeFromTransaction(dataString);
-					List<Byte> message = getMessageFromTransaction(dataString);
-					
-					logger.info("\n--------------------\n Parsing txIndex "+txIndex.toString()+"\n------------\n");
-					
-					if (messageType!=null && messageType.size()>=4 && message!=null) {
-						logger.info("\n--------------------\n Parsing messageType "+messageType.get(3)+"\n------------\n");
-						if (messageType.get(3)==Bet.id.byteValue()) {
-							Bet.parse(txIndex, message);
-						} else if (messageType.get(3)==BetWorldCup.id.byteValue()) {
-							BetWorldCup.parse(txIndex, message);
-						} else if (messageType.get(3)==CrowdfundingProject.id.byteValue()) {
-							CrowdfundingProject.parse(txIndex, message);
-						} else if (messageType.get(3)==CrowdfundingBack.id.byteValue()) {
-							CrowdfundingBack.parse(txIndex, message);
-						} else if (messageType.get(3)==Send.id.byteValue()) {
-							Send.parse(txIndex, message);
-						} else if (messageType.get(3)==Order.id.byteValue()) {
-							Order.parse(txIndex, message);
-						} else if (messageType.get(3)==Cancel.id.byteValue()) {
-							Cancel.parse(txIndex, message);
-						} else if (messageType.get(3)==BTCPay.id.byteValue()) {
-							BTCPay.parse(txIndex, message);
-						}						
-					}
-				}
+                Integer prefix_type = rsTx.getInt("prefix_type");
+                
+                if(1==prefix_type){ //ppk
+                    Byte messageType = getPPkMessageTypeFromTransaction(dataString);
+                    List<Byte> message = getPPkMessageFromTransaction(dataString);
+                    
+                    logger.info("\n--------------------\n Parsing PPk txIndex "+txIndex.toString()+"\n------------\n");
+                    
+                    if (messageType!=null && message!=null) {
+                        logger.info("\n--------------------\n Parsing PPk messageType "+messageType.toString()+"\n------------\n");
+                        if (messageType==Odii.id) {
+                            Odii.parse(txIndex, message);
+                        }else if (messageType==OdiiUpdate.id) {
+                            OdiiUpdate.parse(txIndex, message);
+                        } 				
+                    }
+                } else { //newbiecoin
+                    if (destination.equals(Config.burnAddressFund) || destination.equals(Config.burnAddressDark)) {
+                        //parse Burn
+                        Burn.parse(txIndex);
+                    } else {
+                        List<Byte> messageType = getMessageTypeFromTransaction(dataString);
+                        List<Byte> message = getMessageFromTransaction(dataString);
+                        
+                        logger.info("\n--------------------\n Parsing txIndex "+txIndex.toString()+"\n------------\n");
+                        
+                        if (messageType!=null && messageType.size()>=4 && message!=null) {
+                            logger.info("\n--------------------\n Parsing messageType "+messageType.get(3)+"\n------------\n");
+                            if (messageType.get(3)==Bet.id.byteValue()) {
+                                Bet.parse(txIndex, message);
+                            } else if (messageType.get(3)==BetWorldCup.id.byteValue()) {
+                                BetWorldCup.parse(txIndex, message);
+                            } else if (messageType.get(3)==CrowdfundingProject.id.byteValue()) {
+                                CrowdfundingProject.parse(txIndex, message);
+                            } else if (messageType.get(3)==CrowdfundingBack.id.byteValue()) {
+                                CrowdfundingBack.parse(txIndex, message);
+                            } else if (messageType.get(3)==Send.id.byteValue()) {
+                                Send.parse(txIndex, message);
+                            } else if (messageType.get(3)==Order.id.byteValue()) {
+                                Order.parse(txIndex, message);
+                            } else if (messageType.get(3)==Cancel.id.byteValue()) {
+                                Cancel.parse(txIndex, message);
+                            } else if (messageType.get(3)==BTCPay.id.byteValue()) {
+                                BTCPay.parse(txIndex, message);
+                            }						
+                        }
+                    }
+                }
 			}
             
             //POS
@@ -921,10 +847,265 @@ public class Blocks implements Runnable {
 				throw new Exception(Language.getLangLabel("Transaction timed out. Please try again."));
 			}
 			logger.info("Importing transaction (assigning block number -1)");
-			blocks.importTransaction(tx, null, null);
+			blocks.importTransaction(tx,null, null, null);
 			return true;
 		} catch (Exception e) {
 			throw new Exception(e.getMessage());
 		}		
 	}
+    
+    public void importNewbcoinTransaction(Transaction tx, Block block, Integer blockHeight) {
+		BigInteger fee = BigInteger.ZERO;
+		String destination = "";
+		BigInteger btcAmount = BigInteger.ZERO;
+		List<Byte> dataArrayList = new ArrayList<Byte>();
+		byte[] data = null;
+		String source = "";
+
+		Database db = Database.getInstance();
+
+		//check to see if this is a burn or bet
+		for (TransactionOutput out : tx.getOutputs()) {
+			try {
+				Script script = out.getScriptPubKey();
+				Address address = script.getToAddress(params);
+				if (address.toString().equals(Config.burnAddressFund) || address.toString().equals(Config.burnAddressDark)) {
+					destination = address.toString();
+					btcAmount = out.getValue();
+				}
+			} catch(ScriptException e) {				
+			}
+		}
+
+		for (TransactionOutput out : tx.getOutputs()) {
+			//fee = fee.subtract(out.getValue()); //TODO, turn this on
+			try {
+				Script script = out.getScriptPubKey();
+				List<ScriptChunk> asm = script.getChunks();
+				if (asm.size()==2 && asm.get(0).equalsOpCode(106)) { //OP_RETURN
+					for (byte b : asm.get(1).data) dataArrayList.add(b);
+				} else if (asm.size()>=5 && asm.get(0).equalsOpCode(81) && asm.get(3).equalsOpCode(82) && asm.get(4).equalsOpCode(174)) { //MULTISIG
+					for (int i=1; i<asm.get(2).data[0]+1; i++) dataArrayList.add(asm.get(2).data[i]);
+				}
+
+				if (destination.equals("") && btcAmount==BigInteger.ZERO && dataArrayList.size()==0) {
+					Address address = script.getToAddress(params);
+					destination = address.toString();
+					btcAmount = out.getValue();					
+				}
+			} catch(ScriptException e) {				
+			}
+		}
+		if (destination.equals(Config.burnAddressFund) || destination.equals(Config.burnAddressDark)) {
+		} else if (dataArrayList.size()>Config.newb_prefix.length()) {
+			byte[] prefixBytes = Config.newb_prefix.getBytes();
+			byte[] dataPrefixBytes = Util.toByteArray(dataArrayList.subList(0, Config.newb_prefix.length()));
+			dataArrayList = dataArrayList.subList(Config.newb_prefix.length(), dataArrayList.size());
+			data = Util.toByteArray(dataArrayList);
+			if (!Arrays.equals(prefixBytes,dataPrefixBytes)) {
+				return;
+			}
+		} else {
+			return;
+		}
+		for (TransactionInput in : tx.getInputs()) {
+			if (in.isCoinBase()) return;
+			try {
+				Script script = in.getScriptSig();
+				//fee = fee.add(in.getValue()); //TODO, turn this on
+				Address address = script.getFromAddress(params);
+				if (source.equals("")) {
+					source = address.toString();
+				}else if (!source.equals(address.toString()) 
+                       && !destination.equals(Config.burnAddressFund)
+                       && !destination.equals(Config.burnAddressDark)
+                ){ //require all sources to be the same unless this is a burn
+					return;
+				}
+			} catch(ScriptException e) {
+			}
+		}
+
+		logger.info("Incoming transaction from "+source+" to "+destination+" ("+tx.getHashAsString()+")");
+
+		if (!source.equals("") && (destination.equals(Config.burnAddressFund) || destination.equals(Config.burnAddressDark) || dataArrayList.size()>0)) {
+			String dataString = "";
+			if (destination.equals(Config.burnAddressFund) || destination.equals(Config.burnAddressDark)) {
+			}else{
+				try {
+					dataString = new String(data,"ISO-8859-1");
+				} catch (UnsupportedEncodingException e) {
+				}
+			}
+			db.executeUpdate("delete from transactions where tx_hash='"+tx.getHashAsString()+"' and block_index<0");
+			ResultSet rs = db.executeQuery("select * from transactions where tx_hash='"+tx.getHashAsString()+"';");
+			try {
+				if (!rs.next()) {
+					if (block!=null) {
+						PreparedStatement ps = db.connection.prepareStatement("INSERT INTO transactions(tx_index, tx_hash, block_index, block_time, source, destination, btc_amount, fee, data) VALUES('"+(Util.getLastTxIndex()+1)+"','"+tx.getHashAsString()+"','"+blockHeight+"','"+block.getTimeSeconds()+"','"+source+"','"+destination+"','"+btcAmount.toString()+"','"+fee.toString()+"',?)");
+						ps.setString(1, dataString);
+						ps.execute();
+					}else{
+						PreparedStatement ps = db.connection.prepareStatement("INSERT INTO transactions(tx_index, tx_hash, block_index, block_time, source, destination, btc_amount, fee, data) VALUES('"+(Util.getLastTxIndex()+1)+"','"+tx.getHashAsString()+"','-1','','"+source+"','"+destination+"','"+btcAmount.toString()+"','"+fee.toString()+"',?)");
+						ps.setString(1, dataString);
+						ps.execute();
+					}
+				}
+			} catch (SQLException e) {
+				logger.error(e.toString());
+			}
+		}
+	}
+    
+    public boolean importPPkTransaction(Transaction tx,Integer txSnInBlock,Block block, Integer blockHeight) {
+		BigInteger fee = BigInteger.ZERO;
+		String destination = "";
+		BigInteger btcAmount = BigInteger.ZERO;
+		List<Byte> dataArrayList = new ArrayList<Byte>();
+		byte[] data = null;
+		String source = "";
+
+		Database db = Database.getInstance();
+
+		for (TransactionOutput out : tx.getOutputs()) {
+			try {
+				Script script = out.getScriptPubKey();
+				List<ScriptChunk> asm = script.getChunks();
+				if (asm.size()>=5 && asm.get(0).equalsOpCode(81) && asm.get(3).equalsOpCode(82) && asm.get(4).equalsOpCode(174)) { //MULTISIG
+					for (int i=1; i<asm.get(2).data[0]+1; i++) dataArrayList.add(asm.get(2).data[i]);
+				}
+                
+                if (destination.equals("") && btcAmount==BigInteger.ZERO && dataArrayList.size()==0) {
+					Address address = script.getToAddress(params);
+					destination = address.toString();
+					btcAmount = out.getValue();					
+				}
+			} catch(ScriptException e) {				
+			}
+		}
+        
+		if (dataArrayList.size()>Config.ppk_prefix.length()) {
+            byte[] ppkPrefixBytes = Config.ppk_prefix.getBytes();
+			byte[] dataPrefixBytes = Util.toByteArray(dataArrayList.subList(0, Config.ppk_prefix.length()));
+			dataArrayList = dataArrayList.subList(Config.ppk_prefix.length(), dataArrayList.size());
+			data = Util.toByteArray(dataArrayList);
+            
+            if(!Arrays.equals(ppkPrefixBytes,dataPrefixBytes))
+                return false;
+		} else {
+			return false;
+		}
+        
+        for (TransactionInput in : tx.getInputs()) {
+            if (in.isCoinBase()) return false;
+            try {
+                Script script = in.getScriptSig();
+                //fee = fee.add(in.getValue()); //TODO, turn this on
+                Address address = script.getFromAddress(params);
+                if (source.equals("")) {
+                    source = address.toString();
+                }else if (!source.equals(address.toString()) ){ //require all sources to be the same
+                    return false;
+                }
+            } catch(ScriptException e) {
+            }
+        }
+        
+        logger.info("Incoming PPk transaction from "+source+" to "+destination+" ("+tx.getHashAsString()+")");
+
+        if ( !source.equals("") && dataArrayList.size()>0 ) {
+            String dataString = "";
+            try {
+                dataString = new String(data,"ISO-8859-1");
+            } catch (UnsupportedEncodingException e) {
+            }
+            db.executeUpdate("delete from transactions where tx_hash='"+tx.getHashAsString()+"' and block_index<0");
+            ResultSet rs = db.executeQuery("select * from transactions where tx_hash='"+tx.getHashAsString()+"';");
+            try {
+                if (!rs.next()) {
+                    if (block!=null) {
+                        Integer newTxIndex=Util.getLastTxIndex()+1;
+                        PreparedStatement ps = db.connection.prepareStatement("INSERT INTO transactions(tx_index, tx_hash, block_index, block_time, source, destination, btc_amount, fee, data,prefix_type,sn_in_block) VALUES('"+newTxIndex+"','"+tx.getHashAsString()+"','"+blockHeight+"','"+block.getTimeSeconds()+"','"+source+"','"+destination+"','"+btcAmount.toString()+"','"+fee.toString()+"',?,1,'"+txSnInBlock.toString()+"')");
+                        ps.setString(1, dataString);
+                        ps.execute();
+                    }else{
+                        PreparedStatement ps = db.connection.prepareStatement("INSERT INTO transactions(tx_index, tx_hash, block_index, block_time, source, destination, btc_amount, fee, data,prefix_type,sn_in_block) VALUES('"+(Util.getLastTxIndex()+1)+"','"+tx.getHashAsString()+"','-1','','"+source+"','"+destination+"','"+btcAmount.toString()+"','"+fee.toString()+"',?,1,-1)");
+                        ps.setString(1, dataString);
+                        ps.execute();
+                    }
+                    
+                }
+            } catch (SQLException e) {
+                logger.error(e.toString());
+            }
+        }
+        
+        return true;
+	}
+    
+    public Byte getPPkMessageTypeFromTransaction(String txDataString) {
+		byte[] data;
+		Byte messageType = null;
+		try {
+			data = txDataString.getBytes("ISO-8859-1");
+            messageType=data[0];
+			return messageType;
+		} catch (UnsupportedEncodingException e) {
+		}
+		return messageType;
+	}	
+    
+    public List<Byte> getPPkMessageFromTransaction(String txDataString) {
+		byte[] data;
+		List<Byte> message = null;
+		try {
+			data = txDataString.getBytes("ISO-8859-1");
+			List<Byte> dataArrayList = Util.toByteArrayList(data);
+
+			message = dataArrayList.subList(1, dataArrayList.size());		
+			return message;
+		} catch (UnsupportedEncodingException e) {
+		}
+		return message;
+	}
+   
+   /*
+    public void createAddress()
+	{
+        String source;
+        String destination;
+        BigInteger btcAmount=BigInteger.ZERO;
+        BigInteger fee=BigInteger.ZERO;
+        String dataString=Config.ppk_prefix+"RT";
+        String destAddress="1PPk1ThePeerPeerPublicGroup";
+		Transaction tx = new Transaction(params);
+
+        try{
+			byte[] data = null;
+			List<Byte> dataArrayList = new ArrayList<Byte>();
+			try {
+				data = dataString.getBytes("ISO-8859-1");
+				dataArrayList = Util.toByteArrayList(data);
+			} catch (UnsupportedEncodingException e) {
+			}
+
+			for (int i = 0; i < dataArrayList.size(); i+=32) {
+				List<Byte> chunk = new ArrayList<Byte>(dataArrayList.subList(i, Math.min(i+32, dataArrayList.size())));
+				chunk.add(0, (byte) chunk.size());
+				while (chunk.size()<32+1) {
+					chunk.add((byte) 0);
+				}
+                
+                ECKey  tmpECKey=new ECKey(null, Util.toByteArray(chunk));
+                String tmpAddress=tmpECKey.toAddress(params).toString();
+                System.out.println("tmpAddress="+tmpAddress);
+
+			}
+
+        }catch(Exception e){
+            System.out.println(e.toString());
+        }
+        System.exit(0);		
+	}
+    */
 }

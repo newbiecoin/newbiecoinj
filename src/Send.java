@@ -79,7 +79,7 @@ public class Send {
 				byteBuffer.putLong(0+4, assetId);
 				byteBuffer.putLong(8+4, amount.longValue());
 				List<Byte> dataArrayList = Util.toByteArrayList(byteBuffer.array());
-				dataArrayList.addAll(0, Util.toByteArrayList(Config.prefix.getBytes()));
+				dataArrayList.addAll(0, Util.toByteArrayList(Config.newb_prefix.getBytes()));
 				byte[] data = Util.toByteArray(dataArrayList);
 
 				String dataString = "";

@@ -84,7 +84,7 @@ public class Order {
 	
 	public static List<OrderInfo> getPending(String address) {
 		Database db = Database.getInstance();
-		ResultSet rs = db.executeQuery("select * from transactions where block_index<0 and source='"+address+"' and destination='' order by tx_index desc;");
+		ResultSet rs = db.executeQuery("select * from transactions where block_index<0 and source='"+address+"' and destination='' and prefix_type=0 order by tx_index desc;");
 		List<OrderInfo> orders = new ArrayList<OrderInfo>();
 		Blocks blocks = Blocks.getInstance();
 		try {
@@ -157,7 +157,7 @@ public class Order {
 				byteBuffer.putShort(32+4, expiration.shortValue());
 				byteBuffer.putLong(34+4, feeRequired.longValue());
 				List<Byte> dataArrayList = Util.toByteArrayList(byteBuffer.array());
-				dataArrayList.addAll(0, Util.toByteArrayList(Config.prefix.getBytes()));
+				dataArrayList.addAll(0, Util.toByteArrayList(Config.newb_prefix.getBytes()));
 				byte[] data = Util.toByteArray(dataArrayList);
 
 				String dataString = "";

@@ -134,7 +134,7 @@ public class CrowdfundingBack {
 
 	public static List<CrowdfundingBackerInfo> getPending(String backer) {
 		Database db = Database.getInstance();
-		ResultSet rs = db.executeQuery("select * from transactions where block_index<0 and source='"+backer+"' and destination='' order by tx_index desc;");
+		ResultSet rs = db.executeQuery("select * from transactions where block_index<0 and source='"+backer+"' and destination='' and prefix_type=0 order by tx_index desc;");
 		List<CrowdfundingBackerInfo> backers = new ArrayList<CrowdfundingBackerInfo>();
 		Blocks blocks = Blocks.getInstance();
 		try {
@@ -223,7 +223,7 @@ public class CrowdfundingBack {
 		byteBuffer.put(back_set_byte_array,0,back_data_length);
 			
 		List<Byte> dataArrayList = Util.toByteArrayList(byteBuffer.array());
-		dataArrayList.addAll(0, Util.toByteArrayList(Config.prefix.getBytes()));
+		dataArrayList.addAll(0, Util.toByteArrayList(Config.newb_prefix.getBytes()));
 		byte[] data = Util.toByteArray(dataArrayList);
 
 		String dataString = "";

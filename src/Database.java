@@ -121,6 +121,9 @@ public class Database {
 			
 			//CrowdFund
 			CrowdfundingProject.createTables(this);
+            
+            //CrowdFund
+			Odii.createTables(this);
 
 			updateMinorVersion();
 		} catch (Exception e) {

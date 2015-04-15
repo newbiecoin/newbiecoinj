@@ -1,192 +1,420 @@
 <#import "template.html" as template>
 <@template.content>
-		<div class="row section">
-				<div class="col-xs-4 segment one-third">
-					<h2>${LANG_BUY}</h2>
+<div class="container">
+	<#if my_order_matches??>
+	<div class="row">
+		<div class="col-md-6">
+			<div class="text-center">
+				<h1>${LANG_MY_MATCHED_ORDERS} ( ${address} )</h1>
+			</div>
+			<table class="table table-striped">
+				<thead>
+						<tr>
+								<th>${LANG_BTC_OWED}</th>
+								<th>${LANG_NEWB_IN_RETURN}</th>
+								<th>${LANG_PAY_BTC}</th>
+						</tr>
+				</thead>
 
-					<div class="input-group">
-						<span class="input-group-addon">NEWB</span>
-						<input type="text" placeholder="${LANG_QUANTITY_THAT_YOU_WANT_TO_BUY}" name="buy_quantity"  id="buy_quantity"  size="18">
-					</div>
+				<tbody>
+					<#list my_order_matches as order_match>
+					<tr>
+						<td>${ order_match["btc_owed"]?string(",##0.00000000") }</td>
+						<td>${ order_match["nbc_return"]?string(",##0") }</td>
+						<td>
+							<#if order_match["validity"]=="btcpayed">
+							${LANG_BTC_PAYED_PENDING_CONFIRMED}
+							<#else>
+							<button  class="btn btn-warning" onclick=
+							'confirmBtcpayValid("${ order_match["order_match_id"] }",${ order_match["btc_owed"]?string("##0.00000000") },${ order_match["nbc_return"]?string("##0.00") });' <#if !own??>disabled="disabled"</#if>>${LANG_PAY_BTC}</button>
+							</#if>
+						</td>
+					</tr>
+					</#list>
+				</tbody>
+			</table>
+		</div>
+	</div>
+	</#if>
+	
+	<div class="text-center">
+		<h1>${LANG_MY_ORDERS} ( ${address} )</h1>
+	</div>
+	<div class="row">
+		<div class="col-md-6">
+		<div class="text-center">
+			<h2>${LANG_BUY} ${LANG_NEWBIECOIN}(NEWB)</h2>
+			</div>
+			<table class="table table-striped">
+				<tr>
+					<th></th>
+					<th><div class="text-center">${LANG_VALID_UNTIL}<p></div></th>
+					<th><div class="text-center">${LANG_REMAINING_PRESET_QUANTITY}<p></div></th>
+					<th><div class="text-center">${LANG_PRICE}<p></div></th>
+				</tr>
+				<#if my_pending_orders??>
+				<#list my_pending_orders as order>
+				<#if order["buysell"] = "Buy">
+				<tr>
+					<td>${LANG_PENDING}</td>
+					<td><div class="text-center"> -</div></td>
+					<td><div class="text-center">${ order["quantity_remaining_nbc"]?string(",##0") } / ${ order["quantity_nbc"]?string(",##0") }</div></td>
+					<td><div class="text-center">${ order["price_btc"]?string(",##0.00000000") }</div></td>
+				</tr>
+				</#if>
+				</#list>
+				</#if>
+				
+				<#list my_orders as order>
+				<#if order["buysell"] = "Buy" && order["validity"] = "valid">
+				<tr>
+					<td><div class="text-center">
+						<#if order["quantity_remaining_nbc"] <= 0 && order["quantity_remaining_btc"]<= 0>
+							${LANG_ORDER_FILLED}
+						<#elseif own??>
+							<button class="btn btn-danger" onclick='confirmCancelValid("${ order["tx_hash"] }");'>${LANG_CANCEL}</button>
+						</#if>
+						<#if order["has_pending_match"]??>
+							<#if order["has_pending_match"]=="btcpayed">
+								<br>${LANG_BTC_PAYED_PENDING_CONFIRMED}
+							<#else>
+								<#if order["buysell"]=="Buy">
+								<br><font color="#FF0000">${LANG_PENDING_PAY_BTC}</font>
+								<#else>
+								<br><font color="#FF0000">${LANG_PENDING_BTC_PAYED}</font>
+								</#if>
+							</#if>
+						</#if></div>
+					</td>
+					<td><div class="text-center">${ order["expire_index"] }</div></td>
+					<td><div class="text-center">${ order["quantity_remaining_nbc"]?string(",##0") } / ${ order["quantity_nbc"]?string(",##0") }</div></td>
+					<td><div class="text-center">${ order["price_btc"]?string(",##0.00000000") }</div></td>
+				</tr>
+				</#if>
+				</#list>
+		
+			</table>
 
-					<div class="input-group">
-						<span class="input-group-addon">${LANG_PRICE}(NEWB/BTC)</span>
-						<input type="text" value="0.00000000" name="buy_price_btc"  id="buy_price_btc"  size="9">
-					</div>
-
-					<div class="input-group">
-						<select name="buy_expiration" id="buy_expiration">
-							<option value="6">${LANG_GOOD_FOR_ONE_HOUR}</option>
-							<option value="144">${LANG_GOOD_FOR_ONE_DAY}</option>
-							<option value="1008" selected="selected">${LANG_GOOD_FOR_ONE_WEEK}</option>
-							<option value="4320">${LANG_GOOD_FOR_ONE_MONTH}</option>
-						</select>
-					</div>
-
-					<div class="input-group">
-						<button class="btn btn-primary" onclick="var quantity=document.getElementById('buy_quantity').value;var price_btc=document.getElementById('buy_price_btc').value;var  expiration=document.getElementById('buy_expiration').value;conformOrderValid('buy',quantity,price_btc,expiration);" <#if !own??>disabled="disabled"</#if>>${LANG_BUY}</button>
-					</div>
-				</div>
-				<div class="col-xs-4 segment one-third">
-						<h2>${LANG_ORDER_BOOK}</h2>
-						<table class="table">
-						    <thead>
-						        <tr>
-						            <th>${LANG_BUY}<br>NEWB</th>
-						            <th>${LANG_PRICE}<br>NEWB/BTC</th>
-						            <th>${LANG_SELL}<br>NEWB</th>
-						        </tr>
-						    </thead>
-
-						    <tbody>
-										<#if orders_sell??>
-										<#list orders_sell as order>
-						        <tr>
-												<td></td>
-												<td>${order["price_btc"]?string("##0.00000000")}</td>
-												<td>${order["quantity"]?string(",##0.00")}</td>
-						        </tr>
-										</#list>
-										</#if>
-										<#if orders_buy??>
-										<#list orders_buy as order>
-										<tr>
-												<td>${ order["quantity"]?string(",##0.00") }</td>
-												<td>${ order["price_btc"]?string("##0.00000000") }</td>
-												<td></td>
-										</tr>
-										</#list>
-										</#if>
-						    </tbody>
-						</table>
-				</div>
-				<div class="col-xs-4 segment one-third">
-					<h2>${LANG_SELL}</h2>
-					<div class="input-group">
-						<span class="input-group-addon">NEWB</span>
-						<input type="text" placeholder="${LANG_QUANTITY_THAT_YOU_WANT_TO_SELL}" name="sell_quantity"  id="sell_quantity" size="18">
-					</div>
-
-					<div class="input-group">
-						<span class="input-group-addon">${LANG_PRICE}(NEWB/BTC)</span>
-						<input type="text" value="0.00000000" name="sell_price_btc"  id="sell_price_btc" size="9">
-					</div>
-
-					<div class="input-group">
-						<select name="sell_expiration" id="sell_expiration">
-							<option value="6">${LANG_GOOD_FOR_ONE_HOUR}</option>
-							<option value="144">${LANG_GOOD_FOR_ONE_DAY}</option>
-							<option value="1008" selected="selected">${LANG_GOOD_FOR_ONE_WEEK}</option>
-							<option value="4320">${LANG_GOOD_FOR_ONE_MONTH}</option>
-						</select>
-					</div>
-
-					<div class="input-group">
-						<button class="btn btn-primary" onclick="var quantity=document.getElementById('sell_quantity').value;var price_btc=document.getElementById('sell_price_btc').value;var  expiration=document.getElementById('sell_expiration').value;conformOrderValid('sell',quantity,price_btc,expiration);"<#if !own??>disabled="disabled"</#if>>${LANG_SELL}</button>
-					</div>
-				</div>
+		</div>
+	
+		<div class="col-md-6">
+		<div class="text-center">
+			<h2>${LANG_SELL} ${LANG_NEWBIECOIN}(NEWB)</h2>
+			
+			<table class="table table-striped">
+			
+				<tr>
+					<th><div class="text-center">${LANG_PRICE}<p></div></th>
+					<th><div class="text-center">${LANG_REMAINING_PRESET_QUANTITY}<p></div></th>
+					<th><div class="text-center">${LANG_VALID_UNTIL}<p></div></th>
+					<th></th>
+				</tr>
+				
+				<#if my_pending_orders??>
+				<#list my_pending_orders as order>
+				<#if order["buysell"] = "Sell">
+				<tr>
+					<td><div class="text-center">${ order["price_btc"]?string(",##0.00000000") }</div></td>
+					<td><div class="text-center">${ order["quantity_remaining_nbc"]?string(",##0") } / ${ order["quantity_nbc"]?string(",##0") }</div></td>
+					<td><div class="text-center"> -</div></td>
+					<td>${LANG_PENDING}</td>
+				</tr>
+				</#if>
+				</#list>
+				</#if>
+				
+				<#list my_orders as order>
+				<#if order["buysell"] = "Sell" && order["validity"] = "valid">
+				<tr>
+					<td><div class="text-center">${ order["price_btc"]?string(",##0.00000000") }</div></td>
+					<td><div class="text-center">${ order["quantity_remaining_nbc"]?string(",##0") } / ${ order["quantity_nbc"]?string(",##0") }</div></td>
+					<td><div class="text-center">${ order["expire_index"] }</div></td>
+					<td><div class="text-center">
+						<#if order["quantity_remaining_nbc"] <= 0 && order["quantity_remaining_btc"]<= 0>
+							${LANG_ORDER_FILLED}
+						<#elseif own??>
+							<button class="btn btn-danger" onclick='confirmCancelValid("${ order["tx_hash"] }");'>${LANG_CANCEL}</button>
+						</#if>
+						<#if order["has_pending_match"]??>
+							<#if order["has_pending_match"]=="btcpayed">
+								<br>${LANG_BTC_PAYED_PENDING_CONFIRMED}
+							<#else>
+								<#if order["buysell"]=="Buy">
+								<br><font color="#FF0000">${LANG_PENDING_PAY_BTC}</font>
+								<#else>
+								<br><font color="#FF0000">${LANG_PENDING_BTC_PAYED}</font>
+								</#if>
+							</#if>
+						</#if></div>
+					</td>
+				</tr>
+				</#if>
+				</#list>				
+			</table>
+			</div>
 		</div>
 
-		<div class="row section">
-				<div class="col-xs-6 segment one-half">
-						<h2>${LANG_MY_ORDERS}</h2>
-						<table class="table table-striped">
-								<thead>
-										<tr>
-												<th>${LANG_BUY_OR_SELL}<br>NEWB</th>
-												<th>${LANG_PRICE}<br>NEWB/BTC</th>
-												<th>NEWB</th>
-												<th>BTC</th>
-												<th>${LANG_STATUS}</th>
-										</tr>
-								</thead>
+	</div><!--container-->	
+	</div>
+	
 
-								<tbody>
-										<#if my_pending_orders??>
-										<#list my_pending_orders as order>
-										<tr>
-												<td><#if order["buysell"] = "Buy">${LANG_BUY_LOWER}
-                                                <#else>${LANG_SELL_LOWER}
-                                                </#if></td>
-												<td>${ order["price_btc"]?string(",##0.00000000") }</td>
-												<td>${ order["quantity_remaining_nbc"]?string(",##0.00") } / ${ order["quantity_nbc"]?string(",##0.00") }</td>
-												<td>${ order["quantity_remaining_btc"]?string(",##0.00000000") } / ${ order["quantity_btc"]?string(",##0.00000000") }</td>
-												<td>${LANG_PENDING}</td>
-										</tr>
-										</#list>
-										</#if>
-										
-										<#if my_orders??>
-										<#list my_orders as order>
-										<tr>
-												<td><#if order["buysell"] = "Buy">${LANG_BUY_LOWER}
-                                                <#else>${LANG_SELL_LOWER}
-                                                </#if></td>
-												<td>${ order["price_btc"]?string(",##0.00000000") }</td>
-												<td>${ order["quantity_remaining_nbc"]?string(",##0.00") } / ${ order["quantity_nbc"]?string(",##0.00") }</td>
-												<td>${ order["quantity_remaining_btc"]?string(",##0.00000000") } / ${ order["quantity_btc"]?string(",##0.00000000") }</td>
-												<td>
-													<#if order["validity"] = "valid">
-														<#if order["quantity_remaining_nbc"] <= 0 && order["quantity_remaining_btc"]<= 0>
-															${LANG_ORDER_FILLED}
-														<#elseif own??>
-															<button class="btn btn-danger" onclick='confirmCancelValid("${ order["tx_hash"] }");'>${LANG_CANCEL}</button>
-														</#if>
-                                                    <#elseif order["validity"] = "invalid:expired">
-                                                    ${LANG_INVALID_EXPIRED}
-													<#else>
-													${order["validity"]}
-													</#if>
-													<#if order["has_pending_match"]??>
-														<#if order["has_pending_match"]=="btcpayed">
-															<br>${LANG_BTC_PAYED_PENDING_CONFIRMED}
-														<#else>
-															<#if order["buysell"]=="Buy">
-															<br><font color="#FF0000">${LANG_PENDING_PAY_BTC}</font>
-															<#else>
-															<br><font color="#FF0000">${LANG_PENDING_BTC_PAYED}</font>
-															</#if>
-														</#if>
-													</#if>
-												</td>
-										</tr>
-										</#list>
-										</#if>
-								</tbody>
-						</table>
+
+<div class="text-center">
+	<div class="container">
+		<div class="row">	
+		<div class="col-md-6">
+			<b><p>${LANG_YOU_HAVE} ${reservedBTC?string(",##0.00000000")} ${LANG_BITCOIN}(BTC) ${LANG_RESERVED_FOR_PENDING_BIDS}.</p><p>${LANG_YOU_HAVE} ${(balanceBTC-reservedBTC)?string(",##0.00000000")} ${LANG_BITCOIN}(BTC) ${LANG_AVAILABLE}.</p></b>
+			<div class="form-inline">
+				<div class="form-group">
+					<div>${LANG_SIZE} <input style="width:300px" type="text" placeholder="${LANG_QUANTITY_THAT_YOU_WANT_TO_BUY}" class="form-control" name="buy_quantity"  id="buy_quantity" onchange="buyFunction()">
 					</div>
-					<div class="col-xs-6 segment one-half">
-						<h2>${LANG_MY_MATCHED_ORDERS}</h2>
-						<table class="table table-striped">
-								<thead>
-										<tr>
-												<th>${LANG_BTC_OWED}</th>
-												<th>${LANG_NEWB_IN_RETURN}</th>
-												<th>${LANG_PAY_BTC}</th>
-										</tr>
-								</thead>
-
-								<tbody>
-									<#if my_order_matches??>
-									<#list my_order_matches as order_match>
-									<tr>
-										<td>${ order_match["btc_owed"]?string(",##0.00000000") }</td>
-										<td>${ order_match["nbc_return"]?string(",##0.00") }</td>
-										<td>
-											<#if order_match["validity"]=="btcpayed">
-											${LANG_BTC_PAYED_PENDING_CONFIRMED}
-											<#else>
-											<button  class="btn btn-warning" onclick=
-											'confirmBtcpayValid("${ order_match["order_match_id"] }",${ order_match["btc_owed"]?string("##0.00000000") },${ order_match["nbc_return"]?string("##0.00") });' <#if !own??>disabled="disabled"</#if>>${LANG_PAY_BTC}</button>
-											</#if>
-										</td>
-									</tr>
-									</#list>
-									</#if>
-								</tbody>
-						</table>
+					<div>${LANG_PRICE} <input style="width:300px" type="text" placeholder="${LANG_SET_PRICE_PER_NEWBIECOIN}" data-toggle="popover" class="form-control" 
+							title=""
+							value="${order_min_sell_price}"
+							rel="popover" name="buy_price_btc"  id="buy_price_btc" onchange="buyFunction()">
+					</div>
+					<div>
+					<select name="buy_expiration" id="buy_expiration">
+							<option value="6">${LANG_GOOD_FOR_ONE_HOUR}</option>
+							<option value="144">${LANG_GOOD_FOR_ONE_DAY}</option>
+							<option value="1008">${LANG_GOOD_FOR_ONE_WEEK}</option>
+							<option value="4320"  selected="selected">${LANG_GOOD_FOR_ONE_MONTH}</option>
+					</select>
+					</div>
 				</div>
+				<div class="form-group"><button class="btn btn-success" onclick="var quantity=document.getElementById('buy_quantity').value;var price_btc=document.getElementById('buy_price_btc').value;var  expiration=document.getElementById('buy_expiration').value;conformOrderValid('buy',quantity,price_btc,expiration);" <#if !own??>disabled="disabled"</#if>>${LANG_BUY}</button></div>
+			</div>
+			<br><p id="buy_sum" style="visibility:hidden"></p>
 		</div>
+
+		<div class="col-md-6">
+			<b><p>${LANG_YOU_HAVE} ${reservedNBC?string(",##0")} ${LANG_NEWBIECOIN}(NEWB) ${LANG_RESERVED_FOR_PENDING_BIDS}.</p><p>${LANG_YOU_HAVE} ${(balanceNBC-reservedNBC)?string(",##0")} ${LANG_NEWBIECOIN}(NEWB) ${LANG_AVAILABLE}.</p></b>
+			
+			<div class="form-inline">
+				<div class="form-group">
+					<div>${LANG_SIZE} <input style="width:300px" type="text" placeholder="${LANG_QUANTITY_THAT_YOU_WANT_TO_SELL}" class="form-control" name="sell_quantity"  id="sell_quantity" onchange="sellFunction()">
+					</div>
+					<div>${LANG_PRICE} <input style="width:300px" type="text" placeholder="${LANG_SET_PRICE_PER_NEWBIECOIN}" data-toggle="popover" class="form-control" 
+							title=""
+							value="${order_max_buy_price}"
+							rel="popover" name="sell_price_btc"  id="sell_price_btc" onchange="sellFunction()">
+					</div>
+					<div>
+					<select name="sell_expiration" id="sell_expiration">
+						<option value="6">${LANG_GOOD_FOR_ONE_HOUR}</option>
+						<option value="144">${LANG_GOOD_FOR_ONE_DAY}</option>
+						<option value="1008">${LANG_GOOD_FOR_ONE_WEEK}</option>
+						<option value="4320" selected="selected">${LANG_GOOD_FOR_ONE_MONTH}</option>
+					</select>
+					</div>
+				</div>
+				<div class="form-group"><button class="btn btn-danger" onclick="var quantity=document.getElementById('sell_quantity').value;var price_btc=document.getElementById('sell_price_btc').value;var  expiration=document.getElementById('sell_expiration').value;conformOrderValid('sell',quantity,price_btc,expiration);"<#if !own??>disabled="disabled"</#if>>${LANG_SELL}</button></div>
+			</div>
+			<br><p id="sell_sum" style="visibility:hidden"></p>
+			</div>
+		</div>
+	</div>
+	</div>
+	
+
+	<div class="container">
+			<div class="row">
+				 <div class="col-md-6">
+			     <script type="text/javascript" src="https://www.google.com/jsapi"></script>
+    <script type="text/javascript">
+      google.load('visualization', '1', {packages: ['corechart']});
+
+      function drawVisualization() {
+        // Some raw data (not necessarily accurate)
+		 var data = google.visualization.arrayToDataTable([
+		  ['${LANG_TIME}', '${LANG_VOLUME}', '${LANG_PRICE}']
+		,<#if latest_trades??>
+		<#list latest_trades as order>[new Date(${order["timestamp"]}000),${order["nbc_return"]?string("##0.00")},${order["price_btc"]?string("##0.00000000")}],</#list>
+		</#if>]);
+
+        var options = {
+          title : '${LANG_PRICE_HISTORY} NEWB/BTC',          hAxis: {title: "${LANG_TIME}"},
+          seriesType: "bars",
+          series: {1: {type: "line", targetAxisIndex:0}, 0 : {targetAxisIndex:1}},
+		  vAxes: {0:{title:'${LANG_PRICE}'}, 1:{title:'${LANG_VOLUME}'}}
+        };
+
+        var chart = new google.visualization.ComboChart(document.getElementById('chart_div0'));
+        chart.draw(data, options);
+      }
+      google.setOnLoadCallback(drawVisualization);
+    </script>
+	 <div id="chart_div0" style="width: 500px; height: 400px;"></div>
+				</div>
+				<div class="col-md-6">
+			 
+	<script type="text/javascript" src="https://www.google.com/jsapi"></script>
+    <script type="text/javascript">
+      google.load("visualization", "1", {packages:["corechart"]});
+      google.setOnLoadCallback(drawChart);
+      function drawChart() {
+        var data = google.visualization.arrayToDataTable([["${LANG_PRICE}","Bid","Ask"]
+		,<#if orders_buy_asc??>
+		<#list orders_buy_asc as order>[${ order["price_btc"]?string("##0.00000000") },${ order["sum_nbc"]?string("##0") },0],</#list>
+		[${order_max_buy_price},0,0],
+		</#if>
+		<#if orders_sell??>
+		[${order_min_sell_price},0,0],
+		<#list orders_sell as order>[${order["price_btc"]?string("##0.00000000")},0,${order["sum_nbc"]?string("##0")}],</#list>
+		</#if>	]);
+
+		//data.setColumnProperty(0, 'type', 'number');
+        var options = {
+          title: '${LANG_ORDER_BOOK}' ,
+          hAxis: {title: '${LANG_PRICE}',  titleTextStyle: {color: '#333'}},
+          vAxis: {minValue: 0, title: '${LANG_SIZE}'},
+		  legend: {position: 'none'}
+        };
+		
+        var chart = new google.visualization.AreaChart(document.getElementById('chart_spread'));
+        chart.draw(data, options);
+      }
+    </script>
+    <div id="chart_spread" style="width: 500px; height: 400px;"></div>
+
+					</div>
+			 </div>
+		</div>
+
+		<br><br>	
+	<div class="container">
+	<div class="text-center">
+	<h1>${LANG_ORDER_BOOK}</h1>
+	</div>
+	<div class="row">
+		<div class="col-md-6">
+			<div class="text-center"><h2>${LANG_BUY_ORDERS}</h2></div>
+			
+			<table class="table table-striped">
+				<tr>
+					<th>${LANG_SUM} (NEWB)</th>
+					<th>${LANG_SIZE} (NEWB)</th>
+					<th>${LANG_PRICE} (NEWB/BTC)</th>
+				</tr>
+				<#if orders_buy??>
+				<#list orders_buy as order>
+				<tr>
+					<td>${ order["sum_nbc"]?string(",##0")} NEWB</td>
+					<td>${ order["quantity"]?string(",##0") } NEWB</td>
+					<td>${ order["price_btc"]?string("##0.00000000") } BTC</td>
+				</tr>
+				</#list>
+				</#if>
+				
+			</table>
+		</div>
+		
+		<div class="col-md-6">
+			<div class="text-center"><h2>${LANG_SELL_ORDERS}</h2><div>
+			
+			<table class="table table-striped">
+				<tr>
+					<th>${LANG_PRICE} (NEWB/BTC)</th>
+					<th>${LANG_SIZE} (NEWB)</th>
+					<th>${LANG_SUM} (NEWB)</th>
+				</tr>
+				
+				<#if orders_sell??>
+				<#list orders_sell as order>
+				<tr>
+					<td>${order["price_btc"]?string("##0.00000000")} BTC</td>
+					<td>${order["quantity"]?string(",##0")} NEWB</td>
+					<td>${order["sum_nbc"]?string(",##0")} NEWB</td>
+				</tr>
+				</#list>
+				</#if>
+			</table>
+			
+		</div>
+	</div>	
+	
+</div><!--container-->
+	
+<div class="container">
+	<div class="text-center">
+	<h1>${LANG_LATEST_TRADES}</h1>
+	</div>
+	<table class="table table-striped">
+		<tr>
+			<th></th>
+			<th>${LANG_SIZE} (NEWB)</th>
+			<th>${LANG_PRICE} (NEWB/BTC)</th>
+			<th>${LANG_VOLUME} (BTC)</th>
+			<th>${LANG_TIME}</th>
+		</tr>
+		
+		<#if latest_trades??>
+		<#list latest_trades as order>
+		<tr>
+			<td><#if order["buysell"] = "Buy">${LANG_BUY_LOWER}
+				<#else>${LANG_SELL_LOWER}
+				</#if></td>
+			<td>${order["nbc_return"]?string(",##0")} NEWB</td>
+			<td>${order["price_btc"]?string("##0.00000000")} BTC</td>
+			<td>${(order["price_btc"]*order["nbc_return"])?string("##0.00000000")} BTC</td>
+			<td>${order["date_time"]}</td>
+		</tr>
+		</#list>
+		</#if>
+	</table>
+</div><!--container-->	
+
+<div class="container">
+	<div class="text-center">
+	<h1>${LANG_MY_HISTORY_ORDERS}</h1>
+	</div>
+	<table class="table table-striped">
+		<tr>
+			<th></th>
+			<th>${LANG_PRICE} (NEWB/BTC)</th>
+			<th>${LANG_REMAINING_PRESET_QUANTITY} (NEWB)</th>
+			<th>${LANG_REMAINING_PRESET_QUANTITY} (BTC)</th>
+			<th>${LANG_STATUS}</th>
+		</tr>
+		
+		<#if my_orders??>
+		<#list my_orders as order>
+		<tr>
+				<td><#if order["buysell"] = "Buy">${LANG_BUY_LOWER}
+				<#else>${LANG_SELL_LOWER}
+				</#if></td>
+				<td>${ order["price_btc"]?string(",##0.00000000") }</td>
+				<td>${ order["quantity_remaining_nbc"]?string(",##0") } / ${ order["quantity_nbc"]?string(",##0") }</td>
+				<td>${ order["quantity_remaining_btc"]?string(",##0.00000000") } / ${ order["quantity_btc"]?string(",##0.00000000") }</td>
+				<td>
+					<#if order["validity"] = "valid">
+						<#if order["quantity_remaining_nbc"] <= 0 && order["quantity_remaining_btc"]<= 0>
+							${LANG_ORDER_FILLED}
+						<#elseif own??>
+							<button class="btn btn-danger" onclick='confirmCancelValid("${ order["tx_hash"] }");'>${LANG_CANCEL}</button>
+						</#if>
+					<#elseif order["validity"] = "invalid:expired">
+					${LANG_INVALID_EXPIRED}
+					<#else>
+					${order["validity"]}
+					</#if>
+					<#if order["has_pending_match"]??>
+						<#if order["has_pending_match"]=="btcpayed">
+							<br>${LANG_BTC_PAYED_PENDING_CONFIRMED}
+						<#else>
+							<#if order["buysell"]=="Buy">
+							<br><font color="#FF0000">${LANG_PENDING_PAY_BTC}</font>
+							<#else>
+							<br><font color="#FF0000">${LANG_PENDING_BTC_PAYED}</font>
+							</#if>
+						</#if>
+					</#if>
+				</td>
+		</tr>
+		</#list>
+		</#if>
+	</table>
+</div><!--container-->	
 
 <div class="modal" id="confirmOrderDialog" role="dialog">
 	<div class="modal-dialog">
@@ -262,6 +490,28 @@
 </div>
 
 <script type="text/javascript">
+function buyFunction()
+{
+
+var qty = document.getElementById("buy_quantity").value;
+var price = document.getElementById("buy_price_btc").value;
+qty = (qty * 1).toFixed(8);
+price = (price * 1).toFixed(8);
+document.getElementById('buy_sum').innerHTML = '<strong>- ' + (qty * price).toFixed(8) + ' bitcoins</strong>';
+document.getElementById('buy_sum').style.visibility = 'visible';
+}
+
+function sellFunction()
+{
+var qty = document.getElementById("sell_quantity").value;
+var price = document.getElementById("sell_price_btc").value;
+qty = (qty * 1).toFixed(8);
+price = (price * 1).toFixed(8);	
+document.getElementById('sell_sum').innerHTML = '<strong>+ ' + (qty * price).toFixed(8) + ' bitcoins</strong>';
+document.getElementById('sell_sum').style.visibility = 'visible';
+}
+
+
 function conformOrderValid(buy_or_sell,newb_amount,price_btc,expiration) {
 	var tmp_num = new Number((newb_amount*(price_btc*100000000))*0.00000001);
 	var total_btc=tmp_num.toFixed(8);
@@ -283,10 +533,10 @@ function conformOrderValid(buy_or_sell,newb_amount,price_btc,expiration) {
 		
 		if(buy_or_sell=='buy'){
             document.getElementById('lbl_confirm_title').innerHTML='${LANG_ARE_YOU_SURE_TO} ${LANG_BUY_LOWER} '+newb_amount+" NEWB ?";
-			document.getElementById('lbl_total_btc').innerHTML="${LANG_YOU_WOULD_PAY}:  "+total_btc+" BTC ${LANG_WHILE_YOUR_ORDER_BE_MATCHED_IN} "+expiration+" ${LANG_BLOCKS}";
+			document.getElementById('lbl_total_btc').innerHTML="${LANG_YOU_WOULD_PAY}: "+total_btc+" BTC ${LANG_WHILE_YOUR_ORDER_BE_MATCHED_IN} "+expiration+" ${LANG_BLOCKS}";
 		}else{
             document.getElementById('lbl_confirm_title').innerHTML='${LANG_ARE_YOU_SURE_TO} ${LANG_SELL_LOWER} '+newb_amount+" NEWB ?";
-			document.getElementById('lbl_total_btc').innerHTML="${LANG_YOU_WOULD_GET}"+total_btc+" BTC ${LANG_WHILE_YOUR_ORDER_BE_MATCHED_IN} "+expiration+" ${LANG_BLOCKS}";
+			document.getElementById('lbl_total_btc').innerHTML="${LANG_YOU_WOULD_GET}: "+total_btc+" BTC ${LANG_WHILE_YOUR_ORDER_BE_MATCHED_IN} "+expiration+" ${LANG_BLOCKS}";
 		}
         document.getElementById('btn_confirm_order').disabled=false;
 	}	

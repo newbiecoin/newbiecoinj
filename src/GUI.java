@@ -41,6 +41,8 @@ public class GUI extends Application {
 	private Stage mainStage;
 	private static final int SPLASH_WIDTH = 200;
 	private static final int SPLASH_HEIGHT = 200;
+    
+    private static boolean bShowGui;
 
 	public static void main(String[] args) throws Exception { 
         launch(args); 
@@ -55,21 +57,32 @@ public class GUI extends Application {
             System.out.println(Language.getLangLabel("Newbiecoin"));
         }
         
-		ImageView splash = new ImageView(new Image("file:./resources/static/images/logo.png"));
-		loadProgress = new ProgressBar();
-		loadProgress.setPrefWidth(SPLASH_WIDTH);
-		progressText = new Label("");
-		splashLayout = new VBox();
-		splashLayout.getChildren().addAll(splash, loadProgress, progressText);
-		progressText.setAlignment(Pos.CENTER);
-		splashLayout.setStyle("-fx-padding: 5; -fx-background-color: linear-gradient(to bottom, #ffffff, #ffffff); -fx-border-width:1; -fx-border-color: black;");
-		splashLayout.setEffect(new DropShadow());
+        GUI.bShowGui=true;
+        String strNoGuiSet = System.getProperty("nogui");
+        if(strNoGuiSet!=null){
+            GUI.bShowGui=false;
+        }
+        
+        if(GUI.bShowGui){
+            ImageView splash = new ImageView(new Image("file:./resources/static/images/logo.png"));
+            loadProgress = new ProgressBar();
+            loadProgress.setPrefWidth(SPLASH_WIDTH);
+            progressText = new Label("");
+            splashLayout = new VBox();
+            splashLayout.getChildren().addAll(splash, loadProgress, progressText);
+            progressText.setAlignment(Pos.CENTER);
+            splashLayout.setStyle("-fx-padding: 5; -fx-background-color: linear-gradient(to bottom, #ffffff, #ffffff); -fx-border-width:1; -fx-border-color: black;");
+            splashLayout.setEffect(new DropShadow());
+        }else{
+                        
+        }
 	}
 
 	@Override public void start(final Stage initStage) throws Exception {
 		final Task preloaderTask = new Task() {
 			@Override protected Object call() throws InterruptedException {
-				updateMessage(Language.getLangLabel("Loading")+" "+Config.appName);
+                if(GUI.bShowGui)
+                    updateMessage(Language.getLangLabel("Loading")+" "+Config.appName);
 				
 				// start Blocks
 				final Blocks blocks = Blocks.getInstanceFresh();
@@ -79,14 +92,25 @@ public class GUI extends Application {
 						Integer lastParsedBlock=Util.getLastParsedBlock();
 						while(blocks.newbiecoinBlock == 0  || blocks.working || blocks.parsing 
 								|| lastParsedBlock<blocks.bitcoinBlock ) {
-							if (blocks.newbiecoinBlock > 0) {
-								if( blocks.newbiecoinBlock < blocks.bitcoinBlock )
-									updateMessage(Language.getLangLabel("Getting block")+" " + blocks.newbiecoinBlock + "/" + blocks.bitcoinBlock);
-								else
-									updateMessage(Language.getLangLabel("Parsing")+" " + blocks.newbiecoinBlock + "/" + blocks.bitcoinBlock);
-							} else {
-								updateMessage(blocks.statusMessage);		
-							}
+                            if(GUI.bShowGui){
+                                if (blocks.newbiecoinBlock > 0) {
+                                    if( blocks.newbiecoinBlock < blocks.bitcoinBlock )
+                                        updateMessage(Language.getLangLabel("Getting block")+" " + blocks.newbiecoinBlock + "/" + blocks.bitcoinBlock);
+                                    else
+                                        updateMessage(Language.getLangLabel("Parsing")+" " + blocks.newbiecoinBlock + "/" + blocks.bitcoinBlock);
+                                } else {
+                                    updateMessage(blocks.statusMessage);		
+                                }
+                            }else{
+                                if (blocks.newbiecoinBlock > 0) {
+                                    if( blocks.newbiecoinBlock < blocks.bitcoinBlock )
+                                        System.out.println(Language.getLangLabel("Getting block")+" " + blocks.newbiecoinBlock + "/" + blocks.bitcoinBlock);
+                                    else
+                                        System.out.println(Language.getLangLabel("Parsing")+" " + blocks.newbiecoinBlock + "/" + blocks.bitcoinBlock);
+                                } else {
+                                    System.out.println(blocks.statusMessage);		
+                                }
+                            }
 							try {
 								Thread.sleep(2000);
 							} catch (InterruptedException e) {
@@ -103,12 +127,13 @@ public class GUI extends Application {
 				blocks.versionCheck();
 				blocks.follow();
 				
-				// start Server
-				Server server = new Server();
-				Thread serverThread = new Thread(server);
-				serverThread.setDaemon(true);
-				serverThread.start(); 
-				
+                if(GUI.bShowGui){
+                    // start Server
+                    Server server = new Server();
+                    Thread serverThread = new Thread(server);
+                    serverThread.setDaemon(true);
+                    serverThread.start(); 
+				}
 				//updateProgress(0,1);
 				Thread.sleep(8000);
 				
@@ -116,7 +141,9 @@ public class GUI extends Application {
 			}
 		};
 
-		showSplash(initStage, preloaderTask);
+        if(GUI.bShowGui)
+            showSplash(initStage, preloaderTask);
+            
 		new Thread(preloaderTask).start();
 		//showMainStage();
 	}
@@ -128,7 +155,7 @@ public class GUI extends Application {
 		mainStage.getIcons().add(new Image("file:./resources/static/images/logo.png"));
 		mainStage.setIconified(false);
 		Browser browser=new Browser();
-		Scene scene = new Scene(browser,1000,690, Color.web("#EEEEEE"));
+		Scene scene = new Scene(browser,1100,690, Color.web("#EEEEEE"));
 		mainStage.setResizable(false);
 		mainStage.setScene(scene);
 		mainStage.show();
@@ -188,7 +215,7 @@ class Browser extends Region {
 		VBox vbox1 = new VBox(0);
 		vbox1.getChildren().add(browser);
 		vbox1.getChildren().add(buttonHome);
-		browser.setPrefSize(1000, 654);
+		browser.setPrefSize(1100, 654);
 		vbox1.setAlignment(Pos.TOP_CENTER);
 		getChildren().add(vbox1);
 	}

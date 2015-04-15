@@ -22,7 +22,7 @@ public class Config {
 	
 	//version
 	public static Integer majorVersion = 2;
-	public static Integer minorVersion = 5;
+	public static Integer minorVersion = 7;
 	public static String version = Integer.toString(majorVersion)+"."+Integer.toString(minorVersion);
 	public static Integer majorVersionDB = 1;
 	public static Integer minorVersionDB = 2;
@@ -31,7 +31,7 @@ public class Config {
     public static Boolean testNet = false;
     public static String burnAddressFund = "1NEWBfeEiyM5HC2ERf7ZWHN6DEdjbVXvEW";  //POB to fund
     public static String burnAddressDark = "1NewbiecoinXXXXXXXXXXXXXXXXDN67UA8";  //POB to dark hole
-    public static String prefix = "NEWBCOIN";
+    public static String newb_prefix = "NEWBCOIN";
     
 	//burn
 	public static Integer firstBlock = 303600;
@@ -87,6 +87,20 @@ public class Config {
 	public static Integer minFee = 3000;
 	public static Integer maxFee = 10000;
 	public static Integer dataValue = 0;
+    
+    //PPk
+    public static Integer ppkStandardDataFee = 10000;
+    
+    public static String ppk_prefix = "P2P is future! ppkpub.org->ppk:0";  //1BwiPbYoSW7oBiJW9dLsf1uue2N2gXPXJE
+
+    public static Byte FUNC_ID_ODII_REGIST='R'; 
+    public static Byte FUNC_ID_ODII_UPDATE='U'; 
+    
+    public static Byte DATA_TEXT_UTF8= 'T'; //normal text in UTF-8
+    public static Byte DATA_BIN_GZIP = 'G'; //Compressed by gzip
+    
+    public static Byte DATA_CATALOG_UNKNOWN= 0; //Unkown Data
+    
 	
 	//etc.
 	public static Integer maxExpiration = 4*2016;
