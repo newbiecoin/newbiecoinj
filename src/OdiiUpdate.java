@@ -387,12 +387,6 @@ public class OdiiUpdate {
         Blocks blocks = Blocks.getInstance();
 		Transaction tx = blocks.transaction(updater, destination, BigInteger.valueOf(Config.dustSize), BigInteger.valueOf(Config.ppkStandardDataFee), dataString);
 
-		/*
-        //just for debug
-		logger.info("Test:updateOdii updater="+updater+", dataString.length="+dataString.length()+" dataString="+dataString);
-		blocks.importTransaction(tx, null, null, null);
-		System.exit(0);
-		*/
 		return tx;
 	}
 
